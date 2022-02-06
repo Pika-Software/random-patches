@@ -3,3 +3,5 @@ function math.Clamp(inval, minval, maxval)
 	if (inval > maxval) then return maxval end
 	return inval
 end
+
+MsgN( "Random Patches - Game Patched!" )
