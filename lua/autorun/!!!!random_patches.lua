@@ -35,6 +35,18 @@ do
 end
 
 local hook_Add = hook.Add
+local IsValid = IsValid
+
+if SERVER then
+    local vector_origin = vector_origin
+    hook_Add("EntityTakeDamage", "Random Patches:Fix Damage Force", function( ent, dmg )
+        local phys = ent:GetPhysicsObject()
+        if IsValid( phys ) then
+            phys:ApplyForceOffset( dmg:GetDamageForce(), dmg:GetDamagePosition() )
+            dmg:SetDamageForce( vector_origin )
+        end
+    end)
+end
 
 do
 
@@ -118,7 +130,6 @@ do
             local timer_Create = timer.Create
             local LocalPlayer = LocalPlayer
             local GetConVar = GetConVar
-            local IsValid = IsValid
 
             local Me
             timer_Create("LocalVoiceVolume.LocalPlayer", 0, 0, function()
