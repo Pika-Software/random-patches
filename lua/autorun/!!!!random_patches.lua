@@ -36,6 +36,11 @@ end
 
 local hook_Add = hook.Add
 local IsValid = IsValid
+local ipairs = ipairs
+
+local MapIsCleaning = false
+hook.Add("PreCleanupMap", "Random Patches:PreCleanup", function() MapIsCleaning = true end)
+hook.Add("PostCleanupMap", "Random Patches:AfterCleanup", function() MapIsCleaning = false end)
 
 if SERVER then
     local vector_origin = vector_origin
@@ -44,6 +49,28 @@ if SERVER then
         if IsValid( phys ) then
             phys:ApplyForceOffset( dmg:GetDamageForce(), dmg:GetDamagePosition() )
             dmg:SetDamageForce( vector_origin )
+        end
+    end)
+
+    local doorClasses = {
+        ["func_door"] = true,
+        ["func_door_rotating"] = true,
+        ["prop_door_rotating"] = true
+    }
+
+    local ents_FindByClass = ents.FindByClass
+    hook.Add("EntityRemoved", "Random Patches:Area Portal Fix", function(ent)
+        if MapIsCleainng then return end
+        if IsValid( ent ) and doorClasses[ ent:GetClass() ] then
+            local name = ent:GetName()
+            if (name != "") then
+                for num, portal in ipairs( ents_FindByClass( "func_areaportal" ) ) do
+                    if (portal:GetInternalVariable( "target" ) == name) then
+                        portal:SetSaveValue( "target", "" )
+                        portal:Fire( "Open" )
+                    end
+                end
+            end
         end
     end)
 end
