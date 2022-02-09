@@ -287,9 +287,9 @@ if isDedicated then
     hook.Add("PlayerInitialSpawn", "async_stdout", function()
         hook.Remove("PlayerInitialSpawn", "async_stdout")
         if not pcall( require, "async_stdout" ) then
-            MsgN( "\nIf your server using external controll panel, it's probably using the console.log file, which can reduce server performance by 95% by constantly stopping the thread!\n\nIn order to fix this you need to download 'gmsv_async_stdout_"..(system.IsWindows()and"win"or system.IsLinux()and"linux"or"UNSUPPORTED")..(jit.arch=="x64"and"64"or(system.IsLinux()and""or"32"))..".dll'\nFrom Github: 'https://github.com/WilliamVenner/gmsv_async_stdout/releases' to 'garrysmod/lua/bin/'\n" )
+            MsgC( Color( 250, 150, 50), "\nIf your server using external controll panel, it's probably using the console.log file, which can reduce server performance by 95% by constantly stopping the thread!\n\nIn order to fix this you need to download 'gmsv_async_stdout_"..(system.IsWindows()and"win"or system.IsLinux()and"linux"or"UNSUPPORTED")..(jit.arch=="x64"and"64"or(system.IsLinux()and""or"32"))..".dll'\nFrom Github: 'https://github.com/WilliamVenner/gmsv_async_stdout/releases' to 'garrysmod/lua/bin/'\n\n" )
         end
     end)
 end
 
-MsgN( "Random Patches - Game Patched!" )
+MsgC( Color( 250, 170, 50), "Random Patches - Game Patched!\n" )
