@@ -44,13 +44,15 @@ hook.Add("PostCleanupMap", "Random Patches:AfterCleanup", function() MapIsCleani
 
 local PLAYER = FindMetaTable("Player")
 
+local isDedicated = game.IsDedicated()
+
 if CLIENT then
     if game.SinglePlayer() then
         function PLAYER:IsListenServerHost()
             return true
         end
     else
-        if game.IsDedicated() then
+        if isDedicated then
             function PLAYER:IsListenServerHost()
                 return false
             end
@@ -62,7 +64,7 @@ if CLIENT then
     end
 else
 
-    if not game.SinglePlayer() and not game.IsDedicated() then
+    if not game.SinglePlayer() and not isDedicated then
         hook.Add("PlayerInitialSpawn", "Random Patches:IsListenServerHost", function( ply )
             ply:SetNWBool( "__IsListenServerHost", ply:IsListenServerHost() )
         end)
@@ -279,6 +281,15 @@ do
         end
     end
 
+end
+
+if isDedicated then
+    hook.Add("PlayerInitialSpawn", "async_stdout", function()
+        hook.Remove("PlayerInitialSpawn", "async_stdout")
+        if not pcall( require, "async_stdout" ) then
+            MsgN( "\nIf your server using external controll panel, it's probably using the console.log file, which can reduce server performance by 95% by constantly stopping the thread!\n\nIn order to fix this you need to download 'gmsv_async_stdout_"..(system.IsWindows()and"win"or system.IsLinux()and"linux"or"UNSUPPORTED")..(jit.arch=="x64"and"64"or(system.IsLinux()and""or"32"))..".dll'\nFrom Github: 'https://github.com/WilliamVenner/gmsv_async_stdout/releases' to 'garrysmod/lua/bin/'\n" )
+        end
+    end)
 end
 
 MsgN( "Random Patches - Game Patched!" )
