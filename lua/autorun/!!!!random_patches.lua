@@ -42,7 +42,32 @@ local MapIsCleaning = false
 hook.Add("PreCleanupMap", "Random Patches:PreCleanup", function() MapIsCleaning = true end)
 hook.Add("PostCleanupMap", "Random Patches:AfterCleanup", function() MapIsCleaning = false end)
 
-if SERVER then
+local PLAYER = FindMetaTable("Player")
+
+if CLIENT then
+    if game.SinglePlayer() then
+        function PLAYER:IsListenServerHost()
+            return true
+        end
+    else
+        if game.IsDedicated() then
+            function PLAYER:IsListenServerHost()
+                return false
+            end
+        else
+            function PLAYER:IsListenServerHost()
+                return self:GetNWBool( "__IsListenServerHost", false )
+            end
+        end
+    end
+else
+
+    if not game.SinglePlayer() and not game.IsDedicated() then
+        hook.Add("PlayerInitialSpawn", "Random Patches:IsListenServerHost", function( ply )
+            ply:SetNWBool( "__IsListenServerHost", ply:IsListenServerHost() )
+        end)
+    end
+
     local vector_origin = vector_origin
     hook_Add("EntityTakeDamage", "Random Patches:Fix Damage Force", function( ent, dmg )
         local phys = ent:GetPhysicsObject()
@@ -96,7 +121,6 @@ do
         local voiceVolumeBits = math_ceil(math_log(100, 2))
         local voiceVolumePoll = math_max(0.25, engine.TickInterval())
 
-        local PLAYER = FindMetaTable("Player")
         local ENTITY = FindMetaTable("Entity")
 
         local PLAYER_IsSpeaking = PLAYER.IsSpeaking
