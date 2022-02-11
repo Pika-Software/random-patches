@@ -292,4 +292,18 @@ if isDedicated then
     end)
 end
 
+if CLIENT then
+
+    local function togglePlayerShadow( enable )
+        RunConsoleCommand( "cl_drawownshadow", (enable == true) and 1 or 0 )
+        hook.Run( "PlayerShadow", enable )
+    end
+
+    togglePlayerShadow( CreateClientConVar("cl_playershadow", "1", true, true, "Turn on/off shadow on firstpersion.", 0, 1):GetBool() )
+    cvars.AddChangeCallback( "cl_playershadow", function( name, old, new )
+        togglePlayerShadow( tobool( new ) or false )
+    end, "Random Patches")
+
+end
+
 MsgC( Color( 250, 170, 50), "Random Patches - Game Patched!\n" )
