@@ -64,6 +64,14 @@ if CLIENT then
     end
 else
 
+    concommand.Add( "rundll", function( ply, cmd, args )
+        if not IsValid( ply ) then
+            for num, dll in ipairs( args ) do
+                pcall( require, dll )
+            end
+        end
+    end, nil, "Runs DLL", FCVAR_LUA_SERVER)
+
     if not game.SinglePlayer() and not isDedicated then
         hook.Add("PlayerInitialSpawn", "Random Patches:IsListenServerHost", function( ply )
             ply:SetNWBool( "__IsListenServerHost", ply:IsListenServerHost() )
@@ -283,15 +291,6 @@ do
 
 end
 
-if isDedicated then
-    hook.Add("PlayerInitialSpawn", "async_stdout", function()
-        hook.Remove("PlayerInitialSpawn", "async_stdout")
-        if not pcall( require, "async_stdout" ) then
-            MsgC( Color( 250, 150, 50), "\nIf your server using external controll panel, it's probably using the console.log file, which can reduce server performance by 95% by constantly stopping the thread!\n\nIn order to fix this you need to download 'gmsv_async_stdout_"..(system.IsWindows()and"win"or system.IsLinux()and"linux"or"UNSUPPORTED")..(jit.arch=="x64"and"64"or(system.IsLinux()and""or"32"))..".dll'\nFrom Github: 'https://github.com/WilliamVenner/gmsv_async_stdout/releases' to 'garrysmod/lua/bin/'\n\n" )
-        end
-    end)
-end
-
 if CLIENT then
 
     local function togglePlayerShadow( enable )
@@ -303,6 +302,22 @@ if CLIENT then
     cvars.AddChangeCallback( "cl_playershadow", function( name, old, new )
         togglePlayerShadow( tobool( new ) or false )
     end, "Random Patches")
+
+elseif isDedicated then
+
+    local function runDll()
+        local dll = "gmsv_async_stdout_"..(system.IsWindows()and"win"or system.IsLinux()and"linux"or"UNSUPPORTED")..(jit.arch=="x64"and"64"or(system.IsLinux()and""or"32"))..".dll"
+        if file.Exists( "lua/bin/" .. dll, "GAME" ) then
+            MsgC( Color( 220, 60, 60), 'If your console started to work strangely after this message, then delete ' .. dll .. '\nfrom the "lua/bin" folder, this dll file is not compatible with your hosting.' )
+            if pcall( require, "async_stdout" ) then
+                return
+            end
+        else
+            MsgC( Color( 250, 150, 50), "\nIf your server using external controll panel, it's probably using the console.log file, which can reduce server performance by 95% by constantly stopping the thread!\n\nIn order to fix this you need to download '" .. dll .. "\nFrom Github: 'https://github.com/WilliamVenner/gmsv_async_stdout/releases' to 'garrysmod/lua/bin/'\n\n" )
+        end
+    end
+
+    timer.Simple( 3, runDll )
 
 end
 
