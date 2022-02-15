@@ -291,6 +291,49 @@ do
 
 end
 
+do
+    function string.getChar( str, pos )
+        return str:sub( pos, pos )
+    end
+
+    string.GetChar = string.getChar
+end
+
+do
+    local file_Find = file.Find
+    function file.IsDir( path, gamePath )
+        local files, folders = file_Find( path:GetPathFromFilename() .. "*", gamePath or "DATA" )
+
+        local name = path:GetFileFromFilename()
+        for num, fol in ipairs( folders ) do
+            if (fol == name) then
+                return true
+            end
+        end
+
+        return false
+    end
+
+    function file.Exists( path, gamePath )
+        local files, folders = file_Find( path:GetPathFromFilename() .. "*", gamePath or "DATA" )
+
+        local name = path:GetFileFromFilename()
+        for num, fl in ipairs( files ) do
+            if (fl == name) then
+                return true
+            end
+        end
+
+        for num, fol in ipairs( folders ) do
+            if (fol == name) then
+                return true
+            end
+        end
+
+        return false
+    end
+end
+
 if CLIENT then
 
     local function togglePlayerShadow( enable )
@@ -317,7 +360,10 @@ elseif isDedicated then
         end
     end
 
-    timer.Simple( 3, runDll )
+    if (gmsv_async_stdout_checked == nil) then
+        timer.Simple( 3, runDll )
+        gmsv_async_stdout_checked = true
+    end
 
 end
 
