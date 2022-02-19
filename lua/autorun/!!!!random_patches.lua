@@ -43,6 +43,7 @@ hook.Add("PreCleanupMap", "Random Patches:PreCleanup", function() MapIsCleaning 
 hook.Add("PostCleanupMap", "Random Patches:AfterCleanup", function() MapIsCleaning = false end)
 
 local PLAYER = FindMetaTable("Player")
+local ENTITY = FindMetaTable("Entity")
 
 local isDedicated = game.IsDedicated()
 
@@ -111,6 +112,47 @@ else
 end
 
 do
+    local type = type
+    local assert = assert
+
+    function ENTITY:CallOnRemove( name, func, ... )
+        assert( type( name ) == "string", "bad argument #1 (string expected)")
+        assert( type( func ) == "function", "bad argument #2 (function expected)")
+        self["__callOnRemove"] = self["__callOnRemove"] or {}
+        self["__callOnRemove"][ name ] = { func, {...} }
+    end
+
+    function ENTITY:RemoveCallOnRemove( name )
+        assert( type( name ) == "string", "bad argument #1 (string expected)")
+        if (self["__callOnRemove"] == nil) then return end
+        self["__callOnRemove"][ name ] = nil
+    end
+
+    do
+
+        local isShutdown = false
+        hook.Add("ShutDown", "Random Patches:Entity Remove Fix", function()
+            isShutdown = true
+        end)
+
+        local unpack = unpack
+        local pairs = pairs
+
+        hook.Add("EntityRemoved", "Random Patches:Entity Remove Fix", function( ent )
+            if isShutdown then
+                return
+            end
+
+            if type( ent.CallOnRemove ) == "function" and type( ent["__callOnRemove"] ) == "table" then
+                for name, data in pairs( ent["__callOnRemove"] ) do
+                    data[1]( ent, unpack( data[2] ))
+                end
+            end
+        end)
+    end
+end
+
+do
 
     local math_ceil = math.ceil
     local math_log = math.log
@@ -130,8 +172,6 @@ do
         local plyBits = math_ceil(math_log(game.MaxPlayers(), 2))
         local voiceVolumeBits = math_ceil(math_log(100, 2))
         local voiceVolumePoll = math_max(0.25, engine.TickInterval())
-
-        local ENTITY = FindMetaTable("Entity")
 
         local PLAYER_IsSpeaking = PLAYER.IsSpeaking
         local PLAYER_VoiceVolume = PLAYER.VoiceVolume
@@ -304,7 +344,7 @@ do
     function file.IsDir( path, gamePath )
         local files, folders = file_Find( path:GetPathFromFilename() .. "*", gamePath or "DATA" )
 
-        local name = path:GetFileFromFilename()
+        local name = path:GetFileFromFilename():lower()
         for num, fol in ipairs( folders ) do
             if (fol == name) then
                 return true
@@ -317,7 +357,7 @@ do
     function file.Exists( path, gamePath )
         local files, folders = file_Find( path:GetPathFromFilename() .. "*", gamePath or "DATA" )
 
-        local name = path:GetFileFromFilename()
+        local name = path:GetFileFromFilename():lower()
         for num, fl in ipairs( files ) do
             if (fl == name) then
                 return true
