@@ -79,19 +79,22 @@ else
         end)
     end
 
-    local vector_origin = vector_origin
-    hook_Add("EntityTakeDamage", "Random Patches:Fix Damage Force", function( ent, dmg )
-        local phys = ent:GetPhysicsObject()
-        if IsValid( phys ) then
-            phys:ApplyForceOffset( dmg:GetDamageForce(), dmg:GetDamagePosition() )
-            dmg:SetDamageForce( vector_origin )
-        end
-    end)
+    do
+        local vector_origin = vector_origin
+        hook_Add("EntityTakeDamage", "Random Patches:Fix Damage Force", function( ent, dmg )
+            local phys = ent:GetPhysicsObject()
+            if IsValid( phys ) then
+                phys:ApplyForceOffset( dmg:GetDamageForce() * (dmg:IsExplosionDamage() and math.max(1, math.floor(dmg:GetDamage() / 12)) or 1), dmg:GetDamagePosition() )
+                dmg:SetDamageForce( vector_origin )
+            end
+        end)
+    end
 
     local doorClasses = {
         ["func_door"] = true,
         ["func_door_rotating"] = true,
-        ["prop_door_rotating"] = true
+        ["prop_door_rotating"] = true,
+        ["func_movelinear"] = true
     }
 
     local ents_FindByClass = ents.FindByClass
@@ -407,4 +410,4 @@ elseif isDedicated then
 
 end
 
-MsgC( Color( 250, 170, 50), "Random Patches - Game Patched!\n" )
+MsgC( "\n[Pika Software] ", HSVToColor( ( math.random( 360 ) ) % 360, 0.9, 0.8 ),"Random Patches ~ Game Patched!\n" )
