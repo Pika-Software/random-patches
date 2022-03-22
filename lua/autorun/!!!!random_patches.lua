@@ -34,6 +34,7 @@ do
 
 end
 
+local hook_Run = hook.Run
 local hook_Add = hook.Add
 local IsValid = IsValid
 local ipairs = ipairs
@@ -42,10 +43,7 @@ local MapIsCleaning = false
 hook_Add("PreCleanupMap", "Random Patches:PreCleanup", function() MapIsCleaning = true end)
 hook_Add("PostCleanupMap", "Random Patches:AfterCleanup", function() MapIsCleaning = false end)
 
-local PLAYER = FindMetaTable("Player")
-local ENTITY = FindMetaTable("Entity")
-
-if SERVER then
+if (SERVER) then
 
     concommand.Add( "require", function( ply, cmd, args )
         if not IsValid( ply ) then
@@ -93,6 +91,36 @@ if SERVER then
         end)
     end
 
+    -- Fixes for prop_vehicle_prisoner_pod, worldspawn (and other not Valid but not NULL entities) damage taking (bullets only)
+    -- Explosive damage only works if is located in front of prop_vehicle_prisoner_pod (wtf?)
+
+    hook_Add("EntityTakeDamage", "Random Patches:ApplyDamageForce", function(ent, cdmg)
+        if IsValid( ent ) then
+            if ent.AcceptDamageForce or ent:GetClass() == "prop_vehicle_prisoner_pod" then
+                ent:TakePhysicsDamage( cdmg )
+            end
+        end
+    end)
+
+    hook_Add("OnFireBulletCallback", "Random Patches:PrisonerTakeDamage", function( attk, tr, cdmg )
+        local ent = tr.Entity
+        if (ent ~= NULL) then
+            hook_Run( "EntityTakeDamage", ent, cdmg )
+        end
+    end)
+
+    hook_Add("EntityFireBullets", "Random Patches:BulletCallbackHook", function( ent, data )
+        local old_callback = data.Callback
+        function data.Callback( attk, tr, cdmg, ... )
+            hook_Run( "OnFireBulletCallback", attk, tr, cdmg, ... )
+            if old_callback then
+                return old_callback( attk, tr, cdmg, ... )
+            end
+        end
+
+        return true
+    end)
+
 end
 
 do
@@ -110,7 +138,10 @@ do
 
     local Entity = Entity
 
-    if util.NetworkStringToID("LocalVoiceVolume.Relay") == 0 then
+    if (util.NetworkStringToID("LocalVoiceVolume.Relay") == 0) then
+
+        local PLAYER = FindMetaTable( "Player" )
+        local ENTITY = FindMetaTable( "Entity" )
 
         local plyBits = math_ceil(math_log(game.MaxPlayers(), 2))
         local voiceVolumeBits = math_ceil(math_log(100, 2))
@@ -121,7 +152,7 @@ do
         local ENTITY_IsValid = ENTITY.IsValid
         local ENTITY_EntIndex = ENTITY.EntIndex
 
-        if SERVER then
+        if (SERVER) then
             local util_AddNetworkString = util.AddNetworkString
             local net_Send = net.Send
 
@@ -317,11 +348,11 @@ do
     end
 end
 
-if CLIENT then
+if (CLIENT) then
 
     local function togglePlayerShadow( enable )
         RunConsoleCommand( "cl_drawownshadow", (enable == true) and 1 or 0 )
-        hook.Run( "PlayerShadow", enable )
+        hook_Run( "PlayerShadow", enable )
     end
 
     togglePlayerShadow( CreateClientConVar("cl_playershadow", "1", true, true, "Turn on/off shadow on firstpersion.", 0, 1):GetBool() )
