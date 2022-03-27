@@ -45,6 +45,30 @@ hook_Add("PostCleanupMap", "Random Patches:AfterCleanup", function() MapIsCleani
 
 if (SERVER) then
 
+    do
+
+        local ENTITY = FindMetaTable("Entity")
+
+        if (ENTITY.SourceIgnite == nil) then
+            ENTITY.SourceIgnite = ENTITY.Ignite
+        end
+
+        function ENTITY:Ignite( ... )
+            if (self:WaterLevel() > 0) then
+                return
+            end
+
+            return self:SourceIgnite( ... )
+        end
+
+    end
+
+    hook.Add("OnEntityWaterLevelChanged", "Random Patches:WaterExtinugish", function( ent, old, new )
+        if (new > 1) and ent:IsOnFire() then
+            ent:Extinguish()
+        end
+    end)
+
     concommand.Add( "require", function( ply, cmd, args )
         if not IsValid( ply ) then
             for num, moduleName in ipairs( args ) do
