@@ -4,152 +4,123 @@ function math.Clamp( inval, minval, maxval )
 	return inval
 end
 
-local math_random = math.random
-
 do
 
-    local table_GetKeys = table.GetKeys
-    function table.Random( tab, issequential )
-        local keys = issequential and tab or table_GetKeys(tab)
-        local rand = keys[math_random(1, #keys)]
-        return tab[rand], rand
+    local math_random = math.random
+
+    do
+        local table_GetKeys = table.GetKeys
+        function table.Random( tab, issequential )
+            local keys = issequential and tab or table_GetKeys(tab)
+            local rand = keys[math_random(1, #keys)]
+            return tab[rand], rand
+        end
     end
 
-end
+    do
+        local table_Count = table.Count
+        function table.shuffle( tbl )
+            local len = table_Count( tbl )
+            for i = len, 1, -1 do
+                local rand = math_random( len )
+                tbl[i], tbl[rand] = tbl[rand], tbl[i]
+            end
 
-do
-
-    local table_Count = table.Count
-    function table.shuffle( tbl )
-        local len = table_Count( tbl )
-        for i = len, 1, -1 do
-            local rand = math_random( len )
-            tbl[i], tbl[rand] = tbl[rand], tbl[i]
+            return tbl
         end
 
-        return tbl
+        table.Shuffle = table.shuffle
     end
-
-    table.Shuffle = table.shuffle
 
 end
 
+local hook_Run = hook.Run
 local hook_Add = hook.Add
 local IsValid = IsValid
 local ipairs = ipairs
 
 local MapIsCleaning = false
-hook.Add("PreCleanupMap", "Random Patches:PreCleanup", function() MapIsCleaning = true end)
-hook.Add("PostCleanupMap", "Random Patches:AfterCleanup", function() MapIsCleaning = false end)
+hook_Add("PreCleanupMap", "Random Patches:PreCleanup", function() MapIsCleaning = true end)
+hook_Add("PostCleanupMap", "Random Patches:AfterCleanup", function() MapIsCleaning = false end)
 
-local PLAYER = FindMetaTable("Player")
-local ENTITY = FindMetaTable("Entity")
+if (SERVER) then
 
-local isDedicated = game.IsDedicated()
-
-if CLIENT then
-    if game.SinglePlayer() then
-        function PLAYER:IsListenServerHost()
-            return true
-        end
-    else
-        if isDedicated then
-            function PLAYER:IsListenServerHost()
-                return false
-            end
-        else
-            function PLAYER:IsListenServerHost()
-                return self:GetNWBool( "__IsListenServerHost", false )
-            end
-        end
-    end
-else
-
-    concommand.Add( "rundll", function( ply, cmd, args )
+    concommand.Add( "require", function( ply, cmd, args )
         if not IsValid( ply ) then
-            for num, dll in ipairs( args ) do
-                pcall( require, dll )
-            end
-        end
-    end, nil, "Runs DLL", FCVAR_LUA_SERVER)
-
-    if not game.SinglePlayer() and not isDedicated then
-        hook.Add("PlayerInitialSpawn", "Random Patches:IsListenServerHost", function( ply )
-            ply:SetNWBool( "__IsListenServerHost", ply:IsListenServerHost() )
-        end)
-    end
-
-    local vector_origin = vector_origin
-    hook_Add("EntityTakeDamage", "Random Patches:Fix Damage Force", function( ent, dmg )
-        local phys = ent:GetPhysicsObject()
-        if IsValid( phys ) then
-            phys:ApplyForceOffset( dmg:GetDamageForce(), dmg:GetDamagePosition() )
-            dmg:SetDamageForce( vector_origin )
-        end
-    end)
-
-    local doorClasses = {
-        ["func_door"] = true,
-        ["func_door_rotating"] = true,
-        ["prop_door_rotating"] = true
-    }
-
-    local ents_FindByClass = ents.FindByClass
-    hook.Add("EntityRemoved", "Random Patches:Area Portal Fix", function(ent)
-        if MapIsCleainng then return end
-        if IsValid( ent ) and doorClasses[ ent:GetClass() ] then
-            local name = ent:GetName()
-            if (name != "") then
-                for num, portal in ipairs( ents_FindByClass( "func_areaportal" ) ) do
-                    if (portal:GetInternalVariable( "target" ) == name) then
-                        portal:SetSaveValue( "target", "" )
-                        portal:Fire( "Open" )
-                    end
+            for num, moduleName in ipairs( args ) do
+                if isstring( moduleName ) then
+                    pcall( require, moduleName )
                 end
             end
         end
-    end)
-end
+    end, nil, "Require dll/lua module", FCVAR_LUA_SERVER)
 
-do
-    local type = type
-    local assert = assert
-
-    function ENTITY:CallOnRemove( name, func, ... )
-        assert( type( name ) == "string", "bad argument #1 (string expected)")
-        assert( type( func ) == "function", "bad argument #2 (function expected)")
-        self["__callOnRemove"] = self["__callOnRemove"] or {}
-        self["__callOnRemove"][ name ] = { func, {...} }
-    end
-
-    function ENTITY:RemoveCallOnRemove( name )
-        assert( type( name ) == "string", "bad argument #1 (string expected)")
-        if (self["__callOnRemove"] == nil) then return end
-        self["__callOnRemove"][ name ] = nil
+    do
+        local vector_origin = vector_origin
+        hook_Add("EntityTakeDamage", "Random Patches:Fix Damage Force", function( ent, dmg )
+            local phys = ent:GetPhysicsObject()
+            if IsValid( phys ) then
+                phys:ApplyForceOffset( dmg:GetDamageForce() * (dmg:IsExplosionDamage() and math.max(1, math.floor(dmg:GetDamage() / 12)) or 1), dmg:GetDamagePosition() )
+                dmg:SetDamageForce( vector_origin )
+            end
+        end)
     end
 
     do
+        local doorClasses = {
+            ["func_door"] = true,
+            ["func_door_rotating"] = true,
+            ["prop_door_rotating"] = true,
+            ["func_movelinear"] = true
+        }
 
-        local isShutdown = false
-        hook.Add("ShutDown", "Random Patches:Entity Remove Fix", function()
-            isShutdown = true
-        end)
-
-        local unpack = unpack
-        local pairs = pairs
-
-        hook.Add("EntityRemoved", "Random Patches:Entity Remove Fix", function( ent )
-            if isShutdown then
-                return
-            end
-
-            if type( ent.CallOnRemove ) == "function" and type( ent["__callOnRemove"] ) == "table" then
-                for name, data in pairs( ent["__callOnRemove"] ) do
-                    data[1]( ent, unpack( data[2] ))
+        local ents_FindByClass = ents.FindByClass
+        hook_Add("EntityRemoved", "Random Patches:Area Portal Fix", function(ent)
+            if MapIsCleainng then return end
+            if IsValid( ent ) and doorClasses[ ent:GetClass() ] then
+                local name = ent:GetName()
+                if (name != "") then
+                    for num, portal in ipairs( ents_FindByClass( "func_areaportal" ) ) do
+                        if (portal:GetInternalVariable( "target" ) == name) then
+                            portal:SetSaveValue( "target", "" )
+                            portal:Fire( "Open" )
+                        end
+                    end
                 end
             end
         end)
     end
+
+    -- Fixes for prop_vehicle_prisoner_pod, worldspawn (and other not Valid but not NULL entities) damage taking (bullets only)
+    -- Explosive damage only works if is located in front of prop_vehicle_prisoner_pod (wtf?)
+
+    hook_Add("EntityTakeDamage", "Random Patches:ApplyDamageForce", function(ent, cdmg)
+        if IsValid( ent ) then
+            if ent.AcceptDamageForce or ent:GetClass() == "prop_vehicle_prisoner_pod" then
+                ent:TakePhysicsDamage( cdmg )
+            end
+        end
+    end)
+
+    hook_Add("OnFireBulletCallback", "Random Patches:PrisonerTakeDamage", function( attk, tr, cdmg )
+        local ent = tr.Entity
+        if (ent ~= NULL) then
+            hook_Run( "EntityTakeDamage", ent, cdmg )
+        end
+    end)
+
+    hook_Add("EntityFireBullets", "Random Patches:BulletCallbackHook", function( ent, data )
+        local old_callback = data.Callback
+        function data.Callback( attk, tr, cdmg, ... )
+            hook_Run( "OnFireBulletCallback", attk, tr, cdmg, ... )
+            if old_callback then
+                return old_callback( attk, tr, cdmg, ... )
+            end
+        end
+
+        return true
+    end)
+
 end
 
 do
@@ -167,7 +138,10 @@ do
 
     local Entity = Entity
 
-    if util.NetworkStringToID("LocalVoiceVolume.Relay") == 0 then
+    if (util.NetworkStringToID("LocalVoiceVolume.Relay") == 0) then
+
+        local PLAYER = FindMetaTable( "Player" )
+        local ENTITY = FindMetaTable( "Entity" )
 
         local plyBits = math_ceil(math_log(game.MaxPlayers(), 2))
         local voiceVolumeBits = math_ceil(math_log(100, 2))
@@ -178,7 +152,7 @@ do
         local ENTITY_IsValid = ENTITY.IsValid
         local ENTITY_EntIndex = ENTITY.EntIndex
 
-        if SERVER then
+        if (SERVER) then
             local util_AddNetworkString = util.AddNetworkString
             local net_Send = net.Send
 
@@ -383,11 +357,11 @@ do
     end
 end
 
-if CLIENT then
+if (CLIENT) then
 
     local function togglePlayerShadow( enable )
         RunConsoleCommand( "cl_drawownshadow", (enable == true) and 1 or 0 )
-        hook.Run( "PlayerShadow", enable )
+        hook_Run( "PlayerShadow", enable )
     end
 
     togglePlayerShadow( CreateClientConVar("cl_playershadow", "1", true, true, "Turn on/off shadow on firstpersion.", 0, 1):GetBool() )
@@ -395,7 +369,7 @@ if CLIENT then
         togglePlayerShadow( tobool( new ) or false )
     end, "Random Patches")
 
-elseif isDedicated then
+elseif game.IsDedicated() then
 
     hook.Add("PlayerInitialSpawn", "async_stdout", function()
         hook.Remove("PlayerInitialSpawn", "async_stdout")
@@ -412,4 +386,4 @@ elseif isDedicated then
 
 end
 
-MsgC( Color( 250, 170, 50), "Random Patches - Game Patched!\n" )
+MsgC( "\n[Pika Software] ", HSVToColor( ( math.random( 360 ) ) % 360, 0.9, 0.8 ), "Random Patches ~ Game Patched!\n" )
