@@ -340,7 +340,10 @@ do
 end
 
 do
+
     local file_Find = file.Find
+    _GRandomPatches = _GRandomPatches or {}
+    _GRandomPatches.file_IsDir = _GRandomPatches.file_IsDir or file.IsDir
     function file.IsDir( path, gamePath )
         local files, folders = file_Find( path:GetPathFromFilename() .. "*", gamePath or "DATA" )
 
@@ -354,7 +357,13 @@ do
         return false
     end
 
+    _GRandomPatches.file_Exists = _GRandomPatches.file_Exists or file.Exists
     function file.Exists( path, gamePath )
+        -- Fucking LSAC using this function
+        if path:StartWith( "addons/lsac/" ) then
+            return _GRandomPatches.file_Exists( path, gamePath )
+        end
+
         local files, folders = file_Find( path:GetPathFromFilename() .. "*", gamePath or "DATA" )
 
         local name = path:GetFileFromFilename():lower()
@@ -388,7 +397,8 @@ if CLIENT then
 
 elseif isDedicated then
 
-    local function runDll()
+    hook.Add("PlayerInitialSpawn", "async_stdout", function()
+        hook.Remove("PlayerInitialSpawn", "async_stdout")
         local dll = "gmsv_async_stdout_"..(system.IsWindows()and"win"or system.IsLinux()and"linux"or"UNSUPPORTED")..(jit.arch=="x64"and"64"or(system.IsLinux()and""or"32"))..".dll"
         if file.Exists( "lua/bin/" .. dll, "GAME" ) then
             MsgC( Color( 220, 60, 60), 'If your console started to work strangely after this message, then delete ' .. dll .. '\nfrom the "lua/bin" folder, this dll file is not compatible with your hosting.' )
@@ -398,12 +408,7 @@ elseif isDedicated then
         else
             MsgC( Color( 250, 150, 50), "\nIf your server using external controll panel, it's probably using the console.log file, which can reduce server performance by 95% by constantly stopping the thread!\n\nIn order to fix this you need to download '" .. dll .. "\nFrom Github: 'https://github.com/WilliamVenner/gmsv_async_stdout/releases' to 'garrysmod/lua/bin/'\n\n" )
         end
-    end
-
-    if (gmsv_async_stdout_checked == nil) then
-        timer.Simple( 3, runDll )
-        gmsv_async_stdout_checked = true
-    end
+    end)
 
 end
 
