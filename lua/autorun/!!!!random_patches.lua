@@ -1,3 +1,14 @@
+function IsValid( object )
+    if (object == nil) then return false end
+    if (object == false) then return object end
+    if (object == NULL) then return false end
+
+	local func = object.IsValid
+    if (func == nil) then return false end
+
+	return func( object )
+end
+
 function math.Clamp( inval, minval, maxval )
 	if (inval < minval) then return minval end
 	if (inval > maxval) then return maxval end
