@@ -67,17 +67,6 @@ if (SERVER) then
     end, nil, "Require dll/lua module", FCVAR_LUA_SERVER)
 
     do
-        local vector_origin = vector_origin
-        hook_Add("EntityTakeDamage", "Random Patches:Fix Damage Force", function( ent, dmg )
-            local phys = ent:GetPhysicsObject()
-            if IsValid( phys ) then
-                phys:ApplyForceOffset( dmg:GetDamageForce() * (dmg:IsExplosionDamage() and math.max(1, math.floor(dmg:GetDamage() / 12)) or 1), dmg:GetDamagePosition() )
-                dmg:SetDamageForce( vector_origin )
-            end
-        end)
-    end
-
-    do
         local doorClasses = {
             ["func_door"] = true,
             ["func_door_rotating"] = true,
@@ -105,13 +94,35 @@ if (SERVER) then
     -- Fixes for prop_vehicle_prisoner_pod, worldspawn (and other not Valid but not NULL entities) damage taking (bullets only)
     -- Explosive damage only works if is located in front of prop_vehicle_prisoner_pod (wtf?)
 
-    hook_Add("EntityTakeDamage", "Random Patches:ApplyDamageForce", function(ent, cdmg)
-        if IsValid( ent ) then
-            if ent.AcceptDamageForce or ent:GetClass() == "prop_vehicle_prisoner_pod" then
-                ent:TakePhysicsDamage( cdmg )
+    do
+
+        local vector_origin = vector_origin
+        hook_Add("EntityTakeDamage", "Random Patches:ApplyDamageForce", function( ent, dmg )
+            if IsValid( ent ) then
+                if ent.AcceptDamageForce or ent:GetClass() == "prop_vehicle_prisoner_pod" then
+                    ent:TakePhysicsDamage( dmg )
+                end
+
+                local index = ent:EntIndex()
+                local attacker = dmg:GetAttacker()
+                if IsValid( attacker ) and (index == attacker:EntIndex()) then
+                    return
+                end
+
+                local inflictor = dmg:GetInflictor()
+                if IsValid( inflictor ) and (index == inflictor:EntIndex()) then
+                    return
+                end
+
+                local phys = ent:GetPhysicsObject()
+                if IsValid( phys ) then
+                    phys:ApplyForceOffset( dmg:GetDamageForce() * (dmg:IsExplosionDamage() and math.max(1, math.floor(dmg:GetDamage() / 12)) or 1), dmg:GetDamagePosition() )
+                    dmg:SetDamageForce( vector_origin )
+                end
             end
-        end
-    end)
+        end)
+
+    end
 
     hook_Add("OnFireBulletCallback", "Random Patches:PrisonerTakeDamage", function( attk, tr, cdmg )
         local ent = tr.Entity
