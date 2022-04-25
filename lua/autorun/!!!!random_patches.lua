@@ -6,7 +6,7 @@ function IsValid( object )
 	local func = object.IsValid
     if (func == nil) then return false end
 
-	return func( object )
+	return func( object ) or false
 end
 
 function math.Clamp( inval, minval, maxval )
