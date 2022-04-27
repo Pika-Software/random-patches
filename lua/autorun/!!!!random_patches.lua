@@ -381,15 +381,36 @@ end
 
 if (CLIENT) then
 
-    local function togglePlayerShadow( enable )
-        RunConsoleCommand( "cl_drawownshadow", (enable == true) and 1 or 0 )
-        hook_Run( "PlayerShadow", enable )
+    do
+
+        local ENT = {}
+
+        function ENT:Initialize()
+            self:SetModel( Model( "models/error.mdl" ) )
+
+            self:SetMoveType( MOVETYPE_VPHYSICS )
+            self:SetSolid( SOLID_VPHYSICS )
+            self:PhysicsInit( SOLID_VPHYSICS )
+
+            self:PhysWake()
+        end
+
+        function ENT:Draw( fl )
+            self:DrawModel( fl )
+        end
+
+        scripted_ents.Register( ENT, "client_side_prop" )
+
     end
 
-    togglePlayerShadow( CreateClientConVar("cl_playershadow", "1", true, true, "Turn on/off shadow on firstpersion.", 0, 1):GetBool() )
-    cvars.AddChangeCallback( "cl_playershadow", function( name, old, new )
-        togglePlayerShadow( tobool( new ) or false )
-    end, "Random Patches")
+    do
+        local ents_CreateClientside = ents.CreateClientside
+        function ents.CreateClientProp( mdl )
+            local ent = ents_CreateClientside( "client_side_prop" )
+            ent:SetModel( Model( mdl ) )
+            return ent
+        end
+    end
 
 elseif game.IsDedicated() then
 
