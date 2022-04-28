@@ -1,3 +1,5 @@
+local version = "1.2.1"
+
 function IsValid( object )
     if (object == nil) then return false end
     if (object == false) then return object end
@@ -384,6 +386,7 @@ if (CLIENT) then
     do
 
         local ENT = {}
+        ENT.Base = "base_anim"
 
         function ENT:Initialize()
             self:SetModel( Model( "models/error.mdl" ) )
@@ -429,4 +432,4 @@ elseif game.IsDedicated() then
 
 end
 
-MsgC( "\n[Pika Software] ", HSVToColor( ( math.random( 360 ) ) % 360, 0.9, 0.8 ), "Random Patches ~ Game Patched!\n" )
+MsgC( "\n[Random Patches v" .. version .. "] ", HSVToColor( ( math.random( 360 ) ) % 360, 0.9, 0.8 ), "Game Patched!\n" )
