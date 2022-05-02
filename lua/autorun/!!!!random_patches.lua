@@ -1,5 +1,12 @@
 local version = "1.3.0"
 
+CreateConVar("room_type", "0")
+
+scripted_ents.Register({
+    Base = "base_point",
+    Type = "point"
+}, "info_ladder")
+
 function IsValid( object )
     if (object == nil) then return false end
     if (object == false) then return object end
