@@ -1,10 +1,10 @@
-local version = "1.3.0"
+local version = "1.4.0"
 
 CreateConVar("room_type", "0")
 
 scripted_ents.Register({
-    Base = "base_point",
-    Type = "point"
+    ["Base"] = "base_point",
+    ["Type"] = "point"
 }, "info_ladder")
 
 function IsValid( object )
@@ -440,19 +440,20 @@ elseif game.IsDedicated() then
     -- Simple Server Protection
     do
 
-        local family_sharing = CreateConVar("allow_family_sharing", "0", {FCVAR_ARCHIVE}, " - Allows connecting players with family shared Garry's Mod copy.", 0, 1 ):GetBool()
+        local family_sharing = CreateConVar("allow_family_sharing", "0", FCVAR_ARCHIVE, " - Allows connecting players with family shared Garry's Mod copy.", 0, 1 ):GetBool()
         cvars.AddChangeCallback("allow_family_sharing", function( name, old, new )
             family_sharing = new == "1"
         end)
 
         local util_SteamIDTo64 = util.SteamIDTo64
         hook.Add("PlayerInitialSpawn", "Simple Server Protection", function( ply )
-            if ply:IsBot() then return end
-            local steamid64 = ply:SteamID64()
-            if ( util_SteamIDTo64( ply:SteamID() ) ~= steamid64 ) then
-                ply:Kick( "Wrong SteamID!" )
-                return
-            end
+            if ply:IsBot() or ply:IsListenServerHost() then return end
+
+            -- https://github.com/Be1zebub/Small-GLua-Things/blob/master/anti_steamid_spoof.lua
+            timer.Simple(0, function()
+                if IsValid(ply) == false or ply:IsFullyAuthenticated() then return end
+                ply:Kick("Your SteamID wasn't fully authenticated, try restarting steam.")
+            end)
 
             if family_sharing and (ply:OwnerSteamID64() ~= ply:SteamID64()) then
                 ply:Kick( "Family sharing restricted!" )
