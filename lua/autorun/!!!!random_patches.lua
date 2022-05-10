@@ -1,4 +1,4 @@
-local version = "1.4.0"
+local version = "1.4.1"
 
 CreateConVar("room_type", "0")
 
@@ -85,7 +85,7 @@ if (SERVER) then
 
         local ents_FindByClass = ents.FindByClass
         hook_Add("EntityRemoved", "Random Patches:Area Portal Fix", function(ent)
-            if MapIsCleainng then return end
+            if MapIsCleaning then return end
             if IsValid( ent ) and doorClasses[ ent:GetClass() ] then
                 local name = ent:GetName()
                 if (name != "") then
