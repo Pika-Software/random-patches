@@ -1,4 +1,4 @@
-local version = "1.4.1"
+local version = "1.4.2"
 
 CreateConVar("room_type", "0")
 
@@ -395,16 +395,6 @@ if (CLIENT) then
         local ENT = {}
         ENT.Base = "base_anim"
 
-        function ENT:Initialize()
-            self:SetModel( Model( "models/error.mdl" ) )
-
-            self:SetMoveType( MOVETYPE_VPHYSICS )
-            self:SetSolid( SOLID_VPHYSICS )
-            self:PhysicsInit( SOLID_VPHYSICS )
-
-            self:PhysWake()
-        end
-
         function ENT:Draw( fl )
             self:DrawModel( fl )
         end
@@ -418,6 +408,11 @@ if (CLIENT) then
         function ents.CreateClientProp( mdl )
             local ent = ents_CreateClientside( "client_side_prop" )
             ent:SetModel( Model( mdl ) )
+            ent:SetMoveType( MOVETYPE_VPHYSICS )
+            ent:SetSolid( SOLID_VPHYSICS )
+            ent:PhysicsInit( SOLID_VPHYSICS )
+            ent:PhysWake()
+
             return ent
         end
     end
