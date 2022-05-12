@@ -1,4 +1,5 @@
-local version = "1.4.2"
+local addon_name = "Random Patches"
+local version = "1.5.0"
 
 CreateConVar("room_type", "0")
 
@@ -60,11 +61,20 @@ local IsValid = IsValid
 local ipairs = ipairs
 
 local MapIsCleaning = false
-hook_Add("PreCleanupMap", "Random Patches:PreCleanup", function() MapIsCleaning = true end)
-hook_Add("PostCleanupMap", "Random Patches:AfterCleanup", function() MapIsCleaning = false end)
+hook_Add("PreCleanupMap", addon_name .. " - PreCleanup", function() MapIsCleaning = true end)
+hook_Add("PostCleanupMap", addon_name .. " - AfterCleanup", function() MapIsCleaning = false end)
 
 if (SERVER) then
 
+    -- Reset player color on spawn
+    do
+        local white = Color( 255, 255, 255 )
+        hook_Add("PlayerSpawn", addon_name .. " - Reset Player Color", function( ply )
+            ply:SetColor( white )
+        end)
+    end
+
+    -- dll module require
     concommand.Add( "require", function( ply, cmd, args )
         if not IsValid( ply ) then
             for num, moduleName in ipairs( args ) do
@@ -84,7 +94,7 @@ if (SERVER) then
         }
 
         local ents_FindByClass = ents.FindByClass
-        hook_Add("EntityRemoved", "Random Patches:Area Portal Fix", function(ent)
+        hook_Add("EntityRemoved", addon_name .. " - Area Portal Fix", function(ent)
             if MapIsCleaning then return end
             if IsValid( ent ) and doorClasses[ ent:GetClass() ] then
                 local name = ent:GetName()
@@ -106,8 +116,22 @@ if (SERVER) then
     do
 
         local vector_origin = vector_origin
-        hook_Add("EntityTakeDamage", "Random Patches:ApplyDamageForce", function( ent, dmg )
+        local DMG_DISSOLVE = DMG_DISSOLVE
+
+        hook_Add("EntityTakeDamage", addon_name .. " - ApplyDamageForce", function( ent, dmg )
             if IsValid( ent ) then
+
+                -- Zero health fix
+                if ent:IsPlayer() then
+                    timer.Simple(0, function()
+                        if IsValid( ent ) and ent:Alive() and (ent:Health() < 1) then
+                            dmg:SetDamageType( DMG_DISSOLVE )
+                            dmg:SetDamage( 9999 )
+                            ent:TakeDamageInfo( dmg )
+                        end
+                    end)
+                end
+
                 if ent.AcceptDamageForce or ent:GetClass() == "prop_vehicle_prisoner_pod" then
                     ent:TakePhysicsDamage( dmg )
                 end
@@ -128,19 +152,20 @@ if (SERVER) then
                     phys:ApplyForceOffset( dmg:GetDamageForce() * (dmg:IsExplosionDamage() and math.max(1, math.floor(dmg:GetDamage() / 12)) or 1), dmg:GetDamagePosition() )
                     dmg:SetDamageForce( vector_origin )
                 end
+
             end
         end)
 
     end
 
-    hook_Add("OnFireBulletCallback", "Random Patches:PrisonerTakeDamage", function( attk, tr, cdmg )
+    hook_Add("OnFireBulletCallback", addon_name .. " - PrisonerTakeDamage", function( attk, tr, cdmg )
         local ent = tr.Entity
         if (ent ~= NULL) then
             hook_Run( "EntityTakeDamage", ent, cdmg )
         end
     end)
 
-    hook_Add("EntityFireBullets", "Random Patches:BulletCallbackHook", function( ent, data )
+    hook_Add("EntityFireBullets", addon_name .. " - BulletCallbackHook", function( ent, data )
         local old_callback = data.Callback
         function data.Callback( attk, tr, cdmg, ... )
             hook_Run( "OnFireBulletCallback", attk, tr, cdmg, ... )
@@ -394,6 +419,7 @@ if (CLIENT) then
 
         local ENT = {}
         ENT.Base = "base_anim"
+        ENT.ClassName = "client_side_prop"
 
         function ENT:Draw( fl )
             self:DrawModel( fl )
@@ -419,7 +445,7 @@ if (CLIENT) then
 
 elseif game.IsDedicated() then
 
-    hook.Add("PlayerInitialSpawn", "async_stdout", function()
+    hook_Add("PlayerInitialSpawn", addon_name .. " - async_stdout", function()
         hook.Remove("PlayerInitialSpawn", "async_stdout")
         local dll = "gmsv_async_stdout_"..(system.IsWindows()and"win"or system.IsLinux()and"linux"or"UNSUPPORTED")..(jit.arch=="x64"and"64"or(system.IsLinux()and""or"32"))..".dll"
         if file.Exists( "lua/bin/" .. dll, "GAME" ) then
@@ -441,12 +467,12 @@ elseif game.IsDedicated() then
         end)
 
         local util_SteamIDTo64 = util.SteamIDTo64
-        hook.Add("PlayerInitialSpawn", "Simple Server Protection", function( ply )
+        hook_Add("PlayerInitialSpawn", addon_name .. " - Simple Server Protection", function( ply )
             if ply:IsBot() or ply:IsListenServerHost() then return end
 
             -- https://github.com/Be1zebub/Small-GLua-Things/blob/master/anti_steamid_spoof.lua
             timer.Simple(0, function()
-                if IsValid(ply) == false or ply:IsFullyAuthenticated() then return end
+                if IsValid( ply ) == false or ply:IsFullyAuthenticated() then return end
                 ply:Kick("Your SteamID wasn't fully authenticated, try restarting steam.")
             end)
 
@@ -459,4 +485,4 @@ elseif game.IsDedicated() then
 
 end
 
-MsgC( "\n[Random Patches v" .. version .. "] ", HSVToColor( ( math.random( 360 ) ) % 360, 0.9, 0.8 ), "Game Patched!\n" )
+MsgC( "\n[" .. addon_name .." v" .. version .. "] ", HSVToColor( ( math.random( 360 ) ) % 360, 0.9, 0.8 ), "Game Patched!\n" )
