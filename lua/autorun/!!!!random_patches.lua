@@ -1,5 +1,5 @@
 local addon_name = "Random Patches"
-local version = "1.5.0"
+local version = "1.5.1"
 
 CreateConVar("room_type", "0")
 
@@ -120,6 +120,7 @@ if (SERVER) then
 
         hook_Add("EntityTakeDamage", addon_name .. " - ApplyDamageForce", function( ent, dmg )
             if IsValid( ent ) then
+                if ent:IsNPC() then return end
 
                 -- Zero health fix
                 if ent:IsPlayer() then
@@ -433,11 +434,13 @@ if (CLIENT) then
         local ents_CreateClientside = ents.CreateClientside
         function ents.CreateClientProp( mdl )
             local ent = ents_CreateClientside( "client_side_prop" )
-            ent:SetModel( Model( mdl ) )
-            ent:SetMoveType( MOVETYPE_VPHYSICS )
-            ent:SetSolid( SOLID_VPHYSICS )
-            ent:PhysicsInit( SOLID_VPHYSICS )
-            ent:PhysWake()
+            if (mdl ~= nil) then
+                ent:SetModel( Model( mdl ) )
+                ent:SetMoveType( MOVETYPE_VPHYSICS )
+                ent:SetSolid( SOLID_VPHYSICS )
+                ent:PhysicsInit( SOLID_VPHYSICS )
+                ent:PhysWake()
+            end
 
             return ent
         end
