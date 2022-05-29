@@ -1,7 +1,7 @@
 local addon_name = "Random Patches"
 local version = "1.5.1"
 
-CreateConVar("room_type", "0")
+CreateConVar( "room_type", "0" )
 
 scripted_ents.Register({
     ["Base"] = "base_point",
@@ -55,7 +55,6 @@ do
 
 end
 
-local hook_Run = hook.Run
 local hook_Add = hook.Add
 local IsValid = IsValid
 local ipairs = ipairs
@@ -159,24 +158,29 @@ if (SERVER) then
 
     end
 
-    hook_Add("OnFireBulletCallback", addon_name .. " - PrisonerTakeDamage", function( attk, tr, cdmg )
-        local ent = tr.Entity
-        if (ent ~= NULL) then
-            hook_Run( "EntityTakeDamage", ent, cdmg )
-        end
-    end)
+    do
 
-    hook_Add("EntityFireBullets", addon_name .. " - BulletCallbackHook", function( ent, data )
-        local old_callback = data.Callback
-        function data.Callback( attk, tr, cdmg, ... )
-            hook_Run( "OnFireBulletCallback", attk, tr, cdmg, ... )
-            if old_callback then
-                return old_callback( attk, tr, cdmg, ... )
+        local hook_Run = hook.Run
+        hook_Add("OnFireBulletCallback", addon_name .. " - PrisonerTakeDamage", function( attk, tr, cdmg )
+            local ent = tr.Entity
+            if (ent ~= NULL) then
+                hook_Run( "EntityTakeDamage", ent, cdmg )
             end
-        end
+        end)
 
-        return true
-    end)
+        hook_Add("EntityFireBullets", addon_name .. " - BulletCallbackHook", function( ent, data )
+            local old_callback = data.Callback
+            function data.Callback( attk, tr, cdmg, ... )
+                hook_Run( "OnFireBulletCallback", attk, tr, cdmg, ... )
+                if old_callback then
+                    return old_callback( attk, tr, cdmg, ... )
+                end
+            end
+
+            return true
+        end)
+
+    end
 
 end
 
