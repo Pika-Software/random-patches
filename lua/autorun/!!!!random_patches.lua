@@ -492,4 +492,4 @@ elseif game.IsDedicated() then
 
 end
 
-MsgC( "\n[" .. addon_name .." v" .. version .. "] ", HSVToColor( ( math.random( 360 ) ) % 360, 0.9, 0.8 ), "Game Patched!\n" )
+MsgC( "\n[" .. addon_name .." v" .. version .. "] ", HSVToColor( math.random( 360 ) % 360, 0.9, 0.8 ), "Game Patched!\n" )
