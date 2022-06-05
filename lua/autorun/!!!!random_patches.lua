@@ -1,5 +1,5 @@
 local addon_name = "Random Patches"
-local version = "2.2.0"
+local version = "2.3.1"
 
 CreateConVar( "room_type", "0" )
 scripted_ents.Register({
@@ -176,7 +176,10 @@ do
         {"https://raw.githubusercontent.com/OnTheMatter/gmodaddon-script-cranecrashpreventer-Obsolete-/main/cranecrashprevention/lua/autorun/CraneBugFixLuaHook.lua", "OnTheMatter/gmodaddon-script-cranecrashpreventer-Obsolete", SERVER},
 
         -- This addon aims to fix "fake hits" whenever a player shoots another player, this can cause the attacker to see fake blood particles while the player that's getting show at receives no damage at all.
-        {"https://raw.githubusercontent.com/wrefgtzweve/blood-fix/master/lua/autorun/server/sv_blood_hit.lua", "wrefgtzweve/blood-fix", SERVER}
+        {"https://raw.githubusercontent.com/wrefgtzweve/blood-fix/master/lua/autorun/server/sv_blood_hit.lua", "wrefgtzweve/blood-fix", SERVER},
+
+        -- Seats network optimization
+        {"https://raw.githubusercontent.com/Kefta/gs_podfix/master/lua/autorun/server/gs_podfix.lua", SERVER}
     }
 
     for num, data in ipairs( online_fixes ) do
@@ -278,10 +281,31 @@ if (CLIENT) then
 
 end
 
-if (SERVER) and game.IsDedicated() then
+if (SERVER) and not game.SinglePlayer() then
 
-    -- Sand texture fix
-    resource.AddWorkshop( "1619797564" )
+    -- Fixes from workshop
+    do
+
+        local workshop_content = {
+            -- Sand texture fix
+            "1619797564",
+        }
+
+        for num, wsid in ipairs( workshop_content ) do
+            resource.AddWorkshop( wsid )
+        end
+
+    end
+
+    -- TF2 Maps fix
+    if IsMounted( "tf" ) then
+        local map = game.GetMap()
+        for num, tag in ipairs( {"pl_", "tr_", "to_", "sd_", "rd_", "plr_", "pd_", "pass_", "mvm_", "koth_", "ctf_", "cp_", "arena_"} ) do
+            if map:StartWith( tag ) then
+                resource.AddWorkshop( "110560370" )
+            end
+        end
+    end
 
     -- Simple server protection
     do
