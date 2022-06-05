@@ -1,5 +1,5 @@
 local addon_name = "Random Patches"
-local version = "2.1.0"
+local version = "2.2.0"
 
 CreateConVar( "room_type", "0" )
 scripted_ents.Register({
@@ -176,7 +176,7 @@ do
         {"https://raw.githubusercontent.com/OnTheMatter/gmodaddon-script-cranecrashpreventer-Obsolete-/main/cranecrashprevention/lua/autorun/CraneBugFixLuaHook.lua", "OnTheMatter/gmodaddon-script-cranecrashpreventer-Obsolete", SERVER},
 
         -- This addon aims to fix "fake hits" whenever a player shoots another player, this can cause the attacker to see fake blood particles while the player that's getting show at receives no damage at all.
-        {"https://raw.githubusercontent.com/wrefgtzweve/blood-fix/master/lua/autorun/server/sv_blood_hit.lua", "wrefgtzweve/blood-fix", SERVER and game.IsDedicated()}
+        {"https://raw.githubusercontent.com/wrefgtzweve/blood-fix/master/lua/autorun/server/sv_blood_hit.lua", "wrefgtzweve/blood-fix", SERVER}
     }
 
     for num, data in ipairs( online_fixes ) do
@@ -279,6 +279,9 @@ if (CLIENT) then
 end
 
 if (SERVER) and game.IsDedicated() then
+
+    -- Sand texture fix
+    resource.AddWorkshop( "1619797564" )
 
     -- Simple server protection
     do
