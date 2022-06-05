@@ -1,5 +1,5 @@
 local addon_name = "Random Patches"
-local version = "2.3.1"
+local version = "2.3.2"
 
 CreateConVar( "room_type", "0" )
 scripted_ents.Register({
