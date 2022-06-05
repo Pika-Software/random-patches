@@ -318,14 +318,11 @@ if (SERVER) and not game.SinglePlayer() then
         hook.Add("PlayerInitialSpawn", addon_name .. " - Simple Server Protection", function( ply )
             if ply:IsBot() or ply:IsListenServerHost() then return end
 
-            timer.Simple(0, function()
-                if IsValid( ply ) then
-                    if ply:IsFullyAuthenticated() then return end
-                    ply:Kick( "Your SteamID wasn't fully authenticated, try restarting steam." )
-                end
-            end)
+            if not ply:IsFullyAuthenticated() then
+                ply:Kick( "Your SteamID wasn't fully authenticated, try restarting steam." )
+            end
 
-            if (family_sharing) and (ply:OwnerSteamID64() ~= ply:SteamID64()) then
+            if family_sharing and (ply:OwnerSteamID64() ~= ply:SteamID64()) then
                 ply:Kick( "Family sharing restricted!" )
             end
         end)
