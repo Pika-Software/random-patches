@@ -1,5 +1,5 @@
 local addon_name = "Random Patches"
-local version = "2.5.0"
+local version = "2.5.1"
 
 CreateConVar( "room_type", "0" )
 scripted_ents.Register({
@@ -326,7 +326,7 @@ if (SERVER) and not game.SinglePlayer() then
             family_sharing = new == "1"
         end)
 
-        hook.Add("PlayerInitialSpawn", addon_name .. " - Simple Server Protection", function( ply )
+        hook.Add("PlayerInitialSpawn", addon_name, function( ply )
             if ply:IsBot() or ply:IsListenServerHost() then return end
 
             if not ply:IsFullyAuthenticated() then
@@ -342,14 +342,14 @@ if (SERVER) and not game.SinglePlayer() then
             local connect_times = {}
             hook.Add("CheckPassword", addon_name, function( sid64 )
                 if (connect_times[ sid64 ] ~= nil) and (connect_times[ sid64 ] > SysTime()) then
-                    return false, "#LoadingProgress_BeginConnect"
+                    return false, "Too fast. Please be slowly :)"
                 end
 
                 connect_times[ sid64 ] = SysTime() + 5
 
                 for num, ply in ipairs( player.GetHumans() ) do
                     if (ply:SteamID64() == sid64) then
-                        return false, "#GameUI_ServerRejectInvalidConnection"
+                        return false, "Player with your steamid already on server!"
                     end
                 end
             end)
