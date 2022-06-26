@@ -1,5 +1,5 @@
 local addon_name = "Random Patches"
-local version = "2.3.1"
+local version = "2.4.0"
 
 CreateConVar( "room_type", "0" )
 scripted_ents.Register({
@@ -43,6 +43,17 @@ end
 local hook_Run = hook.Run
 local IsValid = IsValid
 local ipairs = ipairs
+
+function IsMounted( name )
+	for num, data in ipairs( engine.GetGames() ) do
+        if (data.mounted) then
+            if (data.depot == name) then return true end
+            if (data.folder == name) then return true end
+        end
+	end
+
+	return false
+end
 
 if (SERVER) then
 
