@@ -1,5 +1,5 @@
 local addon_name = "Random Patches"
-local version = "2.4.0"
+local version = "2.5.0"
 
 CreateConVar( "room_type", "0" )
 scripted_ents.Register({
@@ -337,6 +337,23 @@ if (SERVER) and not game.SinglePlayer() then
                 ply:Kick( "Family sharing restricted!" )
             end
         end)
+
+        do
+            local connect_times = {}
+            hook.Add("CheckPassword", addon_name, function( sid64 )
+                if (connect_times[ sid64 ] ~= nil) and (connect_times[ sid64 ] > SysTime()) then
+                    return false, "#LoadingProgress_BeginConnect"
+                end
+
+                connect_times[ sid64 ] = SysTime() + 5
+
+                for num, ply in ipairs( player.GetHumans() ) do
+                    if (ply:SteamID64() == sid64) then
+                        return false, "#GameUI_ServerRejectInvalidConnection"
+                    end
+                end
+            end)
+        end
 
     end
 
