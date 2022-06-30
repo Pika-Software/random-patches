@@ -1,5 +1,5 @@
 local addon_name = "Random Patches"
-local version = "2.5.1"
+local version = "2.5.2"
 
 local hook_Run = hook.Run
 local IsValid = IsValid
