@@ -44,15 +44,21 @@ local hook_Run = hook.Run
 local IsValid = IsValid
 local ipairs = ipairs
 
-function IsMounted( name )
-	for num, data in ipairs( engine.GetGames() ) do
-        if (data.mounted) then
-            if (data.depot == name) then return true end
-            if (data.folder == name) then return true end
+do
+    local Mounted = {}
+    for i, data in ipairs( engine.GetGames() ) do
+        if data.mounted then
+            Mounted[ data.depot ] = true
+            Mounted[ data.folder ] = true
         end
-	end
+    end
 
-	return false
+    function IsMounted( name )
+        local data = Mounted[ name ]
+        if data then return true end
+
+        return false
+    end
 end
 
 if (SERVER) then
