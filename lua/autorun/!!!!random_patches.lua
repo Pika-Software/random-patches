@@ -1,15 +1,12 @@
 local addon_name = "Random Patches"
 local version = "2.5.1"
 
-CreateConVar( "room_type", "0" )
-scripted_ents.Register({
-    ["Base"] = "base_point",
-    ["Type"] = "point"
-}, "info_ladder")
+local hook_Run = hook.Run
+local IsValid = IsValid
+local ipairs = ipairs
+local math_random = math.random
 
--- Improved default garry's mod functions
-do
-
+do -- Improved default garry's mod functions
     function IsValid( object )
         if (object == nil) then return false end
         if (object == false) then return object end
@@ -27,27 +24,21 @@ do
         return inval
     end
 
-    local math_random = math.random
     function table.Shuffle( tbl )
         local len = #tbl
         for i = len, 1, -1 do
             local rand = math_random( len )
             tbl[i], tbl[rand] = tbl[rand], tbl[i]
         end
-
         return tbl
     end
-
 end
-
-local hook_Run = hook.Run
-local IsValid = IsValid
-local ipairs = ipairs
 
 do
     local Mounted = {}
     
     local function CacheMount() 
+        table.Empty( Mounted )
         for i, data in ipairs( engine.GetGames() ) do
             if data.mounted then
                 Mounted[ data.depot ] = true
@@ -68,6 +59,11 @@ do
 end
 
 if (SERVER) then
+    CreateConVar( "room_type", "0" )
+    scripted_ents.Register({
+        ["Base"] = "base_point",
+        ["Type"] = "point"
+    }, "info_ladder")
 
     -- Reset player color on spawn
     do
