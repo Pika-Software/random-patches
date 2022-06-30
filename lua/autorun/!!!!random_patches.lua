@@ -46,12 +46,18 @@ local ipairs = ipairs
 
 do
     local Mounted = {}
-    for i, data in ipairs( engine.GetGames() ) do
-        if data.mounted then
-            Mounted[ data.depot ] = true
-            Mounted[ data.folder ] = true
+    
+    local function CacheMount() 
+        for i, data in ipairs( engine.GetGames() ) do
+            if data.mounted then
+                Mounted[ data.depot ] = true
+                Mounted[ data.folder ] = true
+            end
         end
     end
+    hook.Add("GameContentChanged", "CacheMount", CacheMount)
+    
+    CacheMount()
 
     function IsMounted( name )
         local data = Mounted[ name ]
