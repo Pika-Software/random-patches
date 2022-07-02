@@ -1,5 +1,5 @@
 local addon_name = "Random Patches"
-local version = "2.5.2"
+local version = "2.5.3"
 
 local hook_Run = hook.Run
 local IsValid = IsValid
@@ -185,14 +185,11 @@ do
         -- Thats better then a shitty glua table.Random function
         {"https://raw.githubusercontent.com/Be1zebub/Small-GLua-Things/master/sh_tablerandom.lua", "Be1zebub/Small-GLua-Things/sh_tablerandom.lua", SHARED},
 
-        -- this mod attempts to fix this issue: ValveSoftware/source-sdk-2013#442
+        -- Attempts to fix this issue: ValveSoftware/source-sdk-2013#442
         {"https://raw.githubusercontent.com/wgetJane/gmod-shootpos-fix/master/lua/autorun/shootpos_fix.lua", "wgetJane/gmod-shootpos-fix", SHARED},
 
         -- Fixes the hook bloat caused by gmod_hands
         {"https://raw.githubusercontent.com/CFC-Servers/gmod_hands_fix/master/lua/autorun/cfc_fix_hands.lua", "CFC-Servers/gmod_hands_fix", SHARED},
-
-        -- This is a small, somewhat janky script which I put together to fix a crash in gmod whenever a magnet entity was removed from a crane.
-        {"https://raw.githubusercontent.com/OnTheMatter/gmodaddon-script-cranecrashpreventer-Obsolete-/main/cranecrashprevention/lua/autorun/CraneBugFixLuaHook.lua", "OnTheMatter/gmodaddon-script-cranecrashpreventer-Obsolete", SERVER},
 
         -- This addon aims to fix "fake hits" whenever a player shoots another player, this can cause the attacker to see fake blood particles while the player that's getting show at receives no damage at all.
         {"https://raw.githubusercontent.com/wrefgtzweve/blood-fix/master/lua/autorun/server/sv_blood_hit.lua", "wrefgtzweve/blood-fix", SERVER},
