@@ -1,3 +1,11 @@
+--[[
+
+    Title: Random Patches
+    Workshop: https://steamcommunity.com/sharedfiles/filedetails/?id=2806290767
+    GitHub: https://github.com/Pika-Software/gmod_random_patches
+
+--]]
+
 local addon_name = "Random Patches"
 local version = "2.5.3"
 
