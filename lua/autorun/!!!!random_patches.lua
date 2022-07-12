@@ -7,12 +7,13 @@
 --]]
 
 local addon_name = "Random Patches"
-local version = "2.5.3"
+local version = "2.5.4"
 
 local hook_Run = hook.Run
 local IsValid = IsValid
 local ipairs = ipairs
 local math_random = math.random
+local is_ttt = engine.ActiveGamemode() == "terrortown"
 
 do -- Improved default garry's mod functions
     function IsValid( object )
@@ -139,6 +140,7 @@ if (SERVER) then
                     ent:TakePhysicsDamage( dmg )
                 end
 
+                if (is_ttt) then return end
                 local index = ent:EntIndex()
                 local attacker = dmg:GetAttacker()
                 if IsValid( attacker ) and (index == attacker:EntIndex()) then
