@@ -7,7 +7,7 @@
 --]]
 
 local addon_name = "Random Patches"
-local version = "2.5.4"
+local version = "2.6.0"
 
 local hook_Run = hook.Run
 local IsValid = IsValid
@@ -274,6 +274,30 @@ end
 
 -- Client side prop's fix
 if (CLIENT) then
+
+    -- DScrollPanel fix
+    do
+
+        local PANEL = vgui.GetControlTable( "DScrollPanel" )
+
+        function PANEL:PerformLayoutInternal()
+
+            local Tall = self.pnlCanvas:GetTall()
+            local Wide = self:GetWide()
+        
+            self.VBar:SetUp( self:GetTall(), self.pnlCanvas:GetTall() )        
+            self.pnlCanvas:SetPos( 0, self.VBar:GetOffset() )
+            self.pnlCanvas:SetWide( Wide )
+
+            self:Rebuild()
+        
+            if Tall ~= self.pnlCanvas:GetTall() then
+                self.VBar:SetScroll( self.VBar:GetScroll() )
+            end
+        
+        end
+
+    end
 
     do
 
