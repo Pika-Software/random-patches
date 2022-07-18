@@ -7,7 +7,7 @@
 --]]
 
 local addon_name = "Random Patches"
-local version = "2.6.0"
+local version = "2.6.1"
 
 local hook_Run = hook.Run
 local IsValid = IsValid
@@ -228,10 +228,10 @@ end
 -- file.IsDir & file.Exists fixes
 do
 
-    _GRandomPatches = _GRandomPatches or {}
+    __RandomPatches = __RandomPatches or {}
 
     local file_Find = file.Find
-    _GRandomPatches.file_IsDir = _GRandomPatches.file_IsDir or file.IsDir
+    __RandomPatches.file_IsDir = __RandomPatches.file_IsDir or file.IsDir
     function file.IsDir( path, gamePath )
         local files, folders = file_Find( path:GetPathFromFilename() .. "*", gamePath or "DATA" )
 
@@ -245,11 +245,11 @@ do
         return false
     end
 
-    _GRandomPatches.file_Exists = _GRandomPatches.file_Exists or file.Exists
+    __RandomPatches.file_Exists = __RandomPatches.file_Exists or file.Exists
     function file.Exists( path, gamePath )
         -- Fucking LSAC using this function
         if path:StartWith( "addons/lsac/" ) then
-            return _GRandomPatches.file_Exists( path, gamePath )
+            return __RandomPatches.file_Exists( path, gamePath )
         end
 
         local files, folders = file_Find( path:GetPathFromFilename() .. "*", gamePath or "DATA" )
@@ -278,23 +278,32 @@ if (CLIENT) then
     -- DScrollPanel fix
     do
 
-        local PANEL = vgui.GetControlTable( "DScrollPanel" )
-
-        function PANEL:PerformLayoutInternal()
+        local function replace( self )
 
             local Tall = self.pnlCanvas:GetTall()
             local Wide = self:GetWide()
-        
+
             self.VBar:SetUp( self:GetTall(), self.pnlCanvas:GetTall() )        
             self.pnlCanvas:SetPos( 0, self.VBar:GetOffset() )
             self.pnlCanvas:SetWide( Wide )
 
             self:Rebuild()
-        
+
             if Tall ~= self.pnlCanvas:GetTall() then
                 self.VBar:SetScroll( self.VBar:GetScroll() )
             end
-        
+
+        end
+
+        __RandomPatches["derma.DefineControl"] = derma.DefineControl
+        local func = __RandomPatches["derma.DefineControl"]
+
+        function derma.DefineControl( name, description, tab, base )
+            if (name == "DScrollPanel") then
+                tab.PerformLayoutInternal = replace
+            end
+
+            return func( name, description, tab, base )
         end
 
     end
