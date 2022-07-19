@@ -7,7 +7,7 @@
 --]]
 
 local addon_name = "Random Patches"
-local version = "2.7.1"
+local version = "2.7.2"
 
 local hook_Run = hook.Run
 local IsValid = IsValid
@@ -410,7 +410,9 @@ if (SERVER) and not game.SinglePlayer() then
         local map = game.GetMap()
         for num, tag in ipairs( {"pl_", "tr_", "to_", "sd_", "rd_", "plr_", "pd_", "pass_", "mvm_", "koth_", "ctf_", "cp_", "arena_"} ) do
             if map:StartWith( tag ) then
+                MsgN( "[Random Patches] Activated TF2 textures replacement." )
                 resource.AddWorkshop( "110560370" )
+                break
             end
         end
     end
