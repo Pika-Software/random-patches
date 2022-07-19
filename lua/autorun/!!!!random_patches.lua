@@ -7,7 +7,7 @@
 --]]
 
 local addon_name = "Random Patches"
-local version = "2.7.0"
+local version = "2.7.1"
 
 local hook_Run = hook.Run
 local IsValid = IsValid
@@ -277,7 +277,7 @@ end
 if (CLIENT) then
 
     hook.Add("PlayerBindPress", "Bind Press Fix", function( ply, bind, pressed, code )
-        if (pressed) and (bind:sub(1, 1) == "+") then
+        if (bind:sub(1, 1) == "+") then
             if (ply.BindsPressed == nil) then ply.BindsPressed = {} end
             ply.BindsPressed[ code ] = bind
         end
