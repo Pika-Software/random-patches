@@ -7,7 +7,7 @@
 --]]
 
 local addon_name = "Random Patches"
-local version = "2.6.1"
+local version = "2.7.0"
 
 local hook_Run = hook.Run
 local IsValid = IsValid
@@ -43,10 +43,11 @@ do -- Improved default garry's mod functions
     end
 end
 
+-- Improved is mounted
 do
     local Mounted = {}
-    
-    local function CacheMount() 
+
+    local function CacheMount()
         table.Empty( Mounted )
         for i, data in ipairs( engine.GetGames() ) do
             if data.mounted then
@@ -56,7 +57,7 @@ do
         end
     end
     hook.Add("GameContentChanged", "CacheMount", CacheMount)
-    
+
     CacheMount()
 
     function IsMounted( name )
@@ -275,6 +276,54 @@ end
 -- Client side prop's fix
 if (CLIENT) then
 
+    hook.Add("PlayerBindPress", "Bind Press Fix", function( ply, bind, pressed, code )
+        if (pressed) and (bind:sub(1, 1) == "+") then
+            if (ply.BindsPressed == nil) then ply.BindsPressed = {} end
+            ply.BindsPressed[ code ] = bind
+        end
+    end)
+
+    hook.Add("PlayerButtonUp", "Bind Press Fix", function( ply, code )
+        if (ply.BindsPressed == nil) then ply.BindsPressed = {} end
+        local bind = ply.BindsPressed[ code ]
+        if (bind) then
+            hook.Run( "PlayerBindPress", ply, "-" .. bind:sub(2, #bind ), true, code )
+            ply.BindsPressed[ code ] = nil
+        end
+    end)
+
+    do
+        local angle_up = Angle( 1, 0, 0 )
+        hook.Add("PlayerBindPress", "Lookup-down Fix", function( ply, bind, pressed )
+            if (pressed) then
+                local bind_name = bind:sub( 2, #bind )
+                if (bind_name == "lookup") then
+                    if (bind:sub( 1, 1 ) == "+") then
+                        hook.Add("Think", "Lookup Fix", function()
+                            ply:SetEyeAngles( ply:EyeAngles() - angle_up )
+                        end)
+                    else
+                        hook.Remove( "Think", "Lookup Fix" )
+                    end
+
+                    return true
+                end
+
+                if (bind_name == "lookdown") then
+                    if (bind:sub( 1, 1 ) == "+") then
+                        hook.Add("Think", "Lookdown Fix", function()
+                            ply:SetEyeAngles( ply:EyeAngles() + angle_up )
+                        end)
+                    else
+                        hook.Remove( "Think", "Lookdown Fix" )
+                    end
+
+                    return true
+                end
+            end
+        end)
+    end
+
     -- DScrollPanel fix
     do
 
@@ -283,7 +332,7 @@ if (CLIENT) then
             local Tall = self.pnlCanvas:GetTall()
             local Wide = self:GetWide()
 
-            self.VBar:SetUp( self:GetTall(), self.pnlCanvas:GetTall() )        
+            self.VBar:SetUp( self:GetTall(), self.pnlCanvas:GetTall() )
             self.pnlCanvas:SetPos( 0, self.VBar:GetOffset() )
             self.pnlCanvas:SetWide( Wide )
 
