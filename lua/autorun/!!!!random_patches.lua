@@ -7,7 +7,7 @@
 --]]
 
 local addon_name = "Random Patches"
-local version = "2.7.2"
+local version = "2.7.3"
 
 local hook_Run = hook.Run
 local IsValid = IsValid
@@ -300,7 +300,11 @@ if (CLIENT) then
                 if (bind_name == "lookup") then
                     if (bind:sub( 1, 1 ) == "+") then
                         hook.Add("Think", "Lookup Fix", function()
-                            ply:SetEyeAngles( ply:EyeAngles() - angle_up )
+                            if IsValid( ply ) and system.HasFocus() then
+                                ply:SetEyeAngles( ply:EyeAngles() - angle_up )
+                            else
+                                hook.Remove( "Think", "Lookup Fix" )
+                            end
                         end)
                     else
                         hook.Remove( "Think", "Lookup Fix" )
@@ -312,7 +316,11 @@ if (CLIENT) then
                 if (bind_name == "lookdown") then
                     if (bind:sub( 1, 1 ) == "+") then
                         hook.Add("Think", "Lookdown Fix", function()
-                            ply:SetEyeAngles( ply:EyeAngles() + angle_up )
+                            if IsValid( ply ) and system.HasFocus() then
+                                ply:SetEyeAngles( ply:EyeAngles() + angle_up )
+                            else
+                                hook.Remove( "Think", "Lookdown Fix" )
+                            end
                         end)
                     else
                         hook.Remove( "Think", "Lookdown Fix" )
