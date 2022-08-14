@@ -293,7 +293,7 @@ if (CLIENT) then
     end)
 
     do
-        local angle_up = Angle( 1, 0, 0 )
+        local angle_up = Angle( 0.5, 0, 0 )
         hook.Add("PlayerBindPress", "Lookup-down Fix", function( ply, bind, pressed )
             if (pressed) then
                 local bind_name = bind:sub( 2, #bind )
