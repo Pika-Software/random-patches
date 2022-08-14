@@ -429,7 +429,7 @@ if (SERVER) and not game.SinglePlayer() then
             if ply:IsBot() or ply:IsListenServerHost() then return end
 
             if not ply:IsFullyAuthenticated() then
-                ply:Kick( "Your SteamID wasn't fully authenticated, try restarting steam." )
+                ply:Kick( "Your SteamID wasn't fully authenticated, try restart steam." )
             end
 
             if family_sharing and (ply:OwnerSteamID64() ~= ply:SteamID64()) then
