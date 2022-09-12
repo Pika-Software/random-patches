@@ -7,7 +7,7 @@
 --]]
 
 local addon_name = "Random Patches"
-local version = "2.7.3"
+local version = "2.7.4"
 
 local hook_Run = hook.Run
 local IsValid = IsValid
@@ -453,12 +453,6 @@ if (SERVER) and not game.SinglePlayer() then
                 end
 
                 connect_times[ sid64 ] = SysTime() + 5
-
-                for num, ply in ipairs( player.GetHumans() ) do
-                    if (ply:SteamID64() == sid64) then
-                        return false, "Player with your steamid already on server!"
-                    end
-                end
             end)
         end
 
