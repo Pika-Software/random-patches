@@ -6,25 +6,28 @@
 
 --]]
 
-local addon_name = "Random Patches"
-local version = "2.7.6"
+local addon_name = 'Random Patches'
+local version = '2.7.7'
 
 local hook_Run = hook.Run
 local IsValid = IsValid
 local ipairs = ipairs
 local math_random = math.random
-local is_ttt = engine.ActiveGamemode() == "terrortown"
+local is_ttt = engine.ActiveGamemode() == 'terrortown'
 
-do -- Improved default garry's mod functions
+-- Improved default garry's mod functions
+do
+
     function IsValid( object )
-        if (object == nil) then return false end
-        if (object == false) then return object end
+        if not object then return false end
         if (object == NULL) then return false end
 
         local func = object.IsValid
-        if (func == nil) then return false end
+        if (func == nil) then
+            return false
+        end
 
-        return func( object ) or false
+        return func( object )
     end
 
     function math.Clamp( inval, minval, maxval )
@@ -39,74 +42,69 @@ do -- Improved default garry's mod functions
             local rand = math_random( len )
             tbl[i], tbl[rand] = tbl[rand], tbl[i]
         end
+
         return tbl
     end
+
 end
 
 -- Improved is mounted
 do
-    local Mounted = {}
 
-    local function CacheMount()
-        table.Empty( Mounted )
+    local mounted = {}
+    local function cacheMount()
+        table.Empty( mounted )
         for i, data in ipairs( engine.GetGames() ) do
             if data.mounted then
-                Mounted[ data.depot ] = true
-                Mounted[ data.folder ] = true
+                mounted[ data.depot ] = true
+                mounted[ data.folder ] = true
             end
         end
     end
-    hook.Add("GameContentChanged", "CacheMount", CacheMount)
 
-    CacheMount()
+    hook.Add('GameContentChanged', addon_name .. ' - Improved IsMounted', cacheMount)
+    cacheMount()
 
     function IsMounted( name )
-        local data = Mounted[ name ]
-        if data then return true end
+        if mounted[ name ] then
+            return true
+        end
 
         return false
     end
 end
 
 if (SERVER) then
-    CreateConVar( "room_type", "0" )
+    CreateConVar( 'room_type', '0' )
     scripted_ents.Register({
-        ["Base"] = "base_point",
-        ["Type"] = "point"
-    }, "info_ladder")
-
-    -- Reset player color on spawn
-    do
-        local white = Color( 255, 255, 255 )
-        hook.Add("PlayerSpawn", addon_name .. " - Reset Player Color", function( ply )
-            ply:SetColor( white )
-        end)
-    end
+        ['Base'] = 'base_point',
+        ['Type'] = 'point'
+    }, 'info_ladder')
 
     -- Area portal fix if door was removed
     do
 
         local MapIsCleaning = false
-        hook.Add("PreCleanupMap", addon_name .. " - PreCleanup", function() MapIsCleaning = true end)
-        hook.Add("PostCleanupMap", addon_name .. " - AfterCleanup", function() MapIsCleaning = false end)
+        hook.Add('PreCleanupMap', addon_name .. ' - PreCleanup', function() MapIsCleaning = true end)
+        hook.Add('PostCleanupMap', addon_name .. ' - AfterCleanup', function() MapIsCleaning = false end)
 
         local doorClasses = {
-            ["func_door"] = true,
-            ["func_door_rotating"] = true,
-            ["prop_door_rotating"] = true,
-            ["func_movelinear"] = true
+            ['func_door'] = true,
+            ['func_door_rotating'] = true,
+            ['prop_door_rotating'] = true,
+            ['func_movelinear'] = true
         }
 
         local ents_FindByClass = ents.FindByClass
-        hook.Add("EntityRemoved", addon_name .. " - Area Portal Fix", function(ent)
+        hook.Add('EntityRemoved', addon_name .. ' - Area Portal Fix', function(ent)
             if (MapIsCleaning) then return end
             if IsValid( ent ) and doorClasses[ ent:GetClass() ] then
                 local name = ent:GetName()
-                if (name != "") then
-                    for num, portal in ipairs( ents_FindByClass( "func_areaportal" ) ) do
-                        if (portal:GetInternalVariable( "target" ) == name) then
-                            portal:SetSaveValue( "target", "" )
-                            portal:Fire( "Open" )
+                if (name ~= '') then
+                    for num, portal in ipairs( ents_FindByClass( 'func_areaportal' ) ) do
+                        if (portal:GetInternalVariable( 'target' ) == name) then
+                            portal:SetSaveValue( 'target', '' )
+                            portal:Fire( 'Open' )
                         end
                     end
                 end
@@ -122,7 +120,7 @@ if (SERVER) then
         local vector_origin = vector_origin
         local DMG_DISSOLVE = DMG_DISSOLVE
 
-        hook.Add("EntityTakeDamage", addon_name .. " - ApplyDamageForce", function( ent, dmg )
+        hook.Add('EntityTakeDamage', addon_name .. ' - ApplyDamageForce', function( ent, dmg )
             if IsValid( ent ) then
                 if ent:IsNPC() then return end
 
@@ -137,7 +135,7 @@ if (SERVER) then
                     end)
                 end
 
-                if ent.AcceptDamageForce or ent:GetClass() == "prop_vehicle_prisoner_pod" then
+                if ent.AcceptDamageForce or ent:GetClass() == 'prop_vehicle_prisoner_pod' then
                     ent:TakePhysicsDamage( dmg )
                 end
 
@@ -163,17 +161,17 @@ if (SERVER) then
 
     end
 
-    hook.Add("OnFireBulletCallback", addon_name .. " - PrisonerTakeDamage", function( attk, tr, cdmg )
+    hook.Add('OnFireBulletCallback', addon_name .. ' - PrisonerTakeDamage', function( attk, tr, cdmg )
         local ent = tr.Entity
         if (ent ~= NULL) then
-            hook_Run( "EntityTakeDamage", ent, cdmg )
+            hook_Run( 'EntityTakeDamage', ent, cdmg )
         end
     end)
 
-    hook.Add("EntityFireBullets", addon_name .. " - BulletCallbackHook", function( ent, data )
+    hook.Add('EntityFireBullets', addon_name .. ' - BulletCallbackHook', function( ent, data )
         local old_callback = data.Callback
         function data.Callback( attk, tr, cdmg, ... )
-            hook_Run( "OnFireBulletCallback", attk, tr, cdmg, ... )
+            hook_Run( 'OnFireBulletCallback', attk, tr, cdmg, ... )
             if old_callback then
                 return old_callback( attk, tr, cdmg, ... )
             end
@@ -191,22 +189,22 @@ do
     local online_fixes = {
         -- This fixes PLAYER:VoiceVolume() for the local player in Garry's Mod.
         -- By WilliamVenner (https://github.com/WilliamVenner/localvoicevolume)
-        {"https://raw.githubusercontent.com/WilliamVenner/localvoicevolume/master/lua/autorun/localvoicevolume.lua", "WilliamVenner/localvoicevolume", SHARED},
+        {'https://raw.githubusercontent.com/WilliamVenner/localvoicevolume/master/lua/autorun/localvoicevolume.lua', 'WilliamVenner/localvoicevolume', SHARED},
 
         -- Thats better then a shitty glua table.Random function
-        {"https://raw.githubusercontent.com/Be1zebub/Small-GLua-Things/master/sh_tablerandom.lua", "Be1zebub/Small-GLua-Things/sh_tablerandom.lua", SHARED},
+        {'https://raw.githubusercontent.com/Be1zebub/Small-GLua-Things/master/sh_tablerandom.lua', 'Be1zebub/Small-GLua-Things/sh_tablerandom.lua', SHARED},
 
         -- Attempts to fix this issue: ValveSoftware/source-sdk-2013#442
-        {"https://raw.githubusercontent.com/wgetJane/gmod-shootpos-fix/master/lua/autorun/shootpos_fix.lua", "wgetJane/gmod-shootpos-fix", SHARED},
+        {'https://raw.githubusercontent.com/wgetJane/gmod-shootpos-fix/master/lua/autorun/shootpos_fix.lua', 'wgetJane/gmod-shootpos-fix', SHARED},
 
         -- Fixes the hook bloat caused by gmod_hands
-        {"https://raw.githubusercontent.com/CFC-Servers/gmod_hands_fix/master/lua/autorun/cfc_fix_hands.lua", "CFC-Servers/gmod_hands_fix", SHARED},
+        {'https://raw.githubusercontent.com/CFC-Servers/gmod_hands_fix/master/lua/autorun/cfc_fix_hands.lua', 'CFC-Servers/gmod_hands_fix', SHARED},
 
-        -- This addon aims to fix "fake hits" whenever a player shoots another player, this can cause the attacker to see fake blood particles while the player that's getting show at receives no damage at all.
-        {"https://raw.githubusercontent.com/wrefgtzweve/blood-fix/master/lua/autorun/server/sv_blood_hit.lua", "wrefgtzweve/blood-fix", SERVER},
+        -- This addon aims to fix 'fake hits' whenever a player shoots another player, this can cause the attacker to see fake blood particles while the player that's getting show at receives no damage at all.
+        {'https://raw.githubusercontent.com/wrefgtzweve/blood-fix/master/lua/autorun/server/sv_blood_hit.lua', 'wrefgtzweve/blood-fix', SERVER},
 
         -- Seats network optimization
-        {"https://raw.githubusercontent.com/Kefta/gs_podfix/master/lua/autorun/server/gs_podfix.lua", SERVER}
+        {'https://raw.githubusercontent.com/Kefta/gs_podfix/master/lua/autorun/server/gs_podfix.lua', SERVER}
     }
 
     for num, data in ipairs( online_fixes ) do
@@ -234,7 +232,7 @@ do
     local file_Find = file.Find
     __RandomPatches.file_IsDir = __RandomPatches.file_IsDir or file.IsDir
     function file.IsDir( path, gamePath )
-        local files, folders = file_Find( path:GetPathFromFilename() .. "*", gamePath or "DATA" )
+        local files, folders = file_Find( path:GetPathFromFilename() .. '*', gamePath or 'DATA' )
 
         local name = path:GetFileFromFilename():lower()
         for num, fol in ipairs( folders ) do
@@ -249,11 +247,11 @@ do
     __RandomPatches.file_Exists = __RandomPatches.file_Exists or file.Exists
     function file.Exists( path, gamePath )
         -- Fucking LSAC using this function
-        if path:StartWith( "addons/lsac/" ) then
+        if path:StartWith( 'addons/lsac/' ) then
             return __RandomPatches.file_Exists( path, gamePath )
         end
 
-        local files, folders = file_Find( path:GetPathFromFilename() .. "*", gamePath or "DATA" )
+        local files, folders = file_Find( path:GetPathFromFilename() .. '*', gamePath or 'DATA' )
 
         local name = path:GetFileFromFilename():lower()
         for num, fl in ipairs( files ) do
@@ -276,54 +274,54 @@ end
 -- Client side prop's fix
 if (CLIENT) then
 
-    hook.Add("PlayerBindPress", "Bind Press Fix", function( ply, bind, pressed, code )
-        if (bind:sub(1, 1) == "+") then
+    hook.Add('PlayerBindPress', 'Bind Press Fix', function( ply, bind, pressed, code )
+        if (bind:sub(1, 1) == '+') then
             if (ply.BindsPressed == nil) then ply.BindsPressed = {} end
             ply.BindsPressed[ code ] = bind
         end
     end)
 
-    hook.Add("PlayerButtonUp", "Bind Press Fix", function( ply, code )
+    hook.Add('PlayerButtonUp', 'Bind Press Fix', function( ply, code )
         if (ply.BindsPressed == nil) then ply.BindsPressed = {} end
         local bind = ply.BindsPressed[ code ]
         if (bind) then
-            hook.Run( "PlayerBindPress", ply, "-" .. bind:sub(2, #bind ), true, code )
+            hook.Run( 'PlayerBindPress', ply, '-' .. bind:sub(2, #bind ), true, code )
             ply.BindsPressed[ code ] = nil
         end
     end)
 
     do
         local angle_up = Angle( 0.5, 0, 0 )
-        hook.Add("PlayerBindPress", "Lookup-down Fix", function( ply, bind, pressed )
+        hook.Add('PlayerBindPress', 'Lookup-down Fix', function( ply, bind, pressed )
             if (pressed) then
                 local bind_name = bind:sub( 2, #bind )
-                if (bind_name == "lookup") then
-                    if (bind:sub( 1, 1 ) == "+") then
-                        hook.Add("Think", "Lookup Fix", function()
+                if (bind_name == 'lookup') then
+                    if (bind:sub( 1, 1 ) == '+') then
+                        hook.Add('Think', 'Lookup Fix', function()
                             if IsValid( ply ) and system.HasFocus() then
                                 ply:SetEyeAngles( ply:EyeAngles() - angle_up )
                             else
-                                hook.Remove( "Think", "Lookup Fix" )
+                                hook.Remove( 'Think', 'Lookup Fix' )
                             end
                         end)
                     else
-                        hook.Remove( "Think", "Lookup Fix" )
+                        hook.Remove( 'Think', 'Lookup Fix' )
                     end
 
                     return true
                 end
 
-                if (bind_name == "lookdown") then
-                    if (bind:sub( 1, 1 ) == "+") then
-                        hook.Add("Think", "Lookdown Fix", function()
+                if (bind_name == 'lookdown') then
+                    if (bind:sub( 1, 1 ) == '+') then
+                        hook.Add('Think', 'Lookdown Fix', function()
                             if IsValid( ply ) and system.HasFocus() then
                                 ply:SetEyeAngles( ply:EyeAngles() + angle_up )
                             else
-                                hook.Remove( "Think", "Lookdown Fix" )
+                                hook.Remove( 'Think', 'Lookdown Fix' )
                             end
                         end)
                     else
-                        hook.Remove( "Think", "Lookdown Fix" )
+                        hook.Remove( 'Think', 'Lookdown Fix' )
                     end
 
                     return true
@@ -332,48 +330,48 @@ if (CLIENT) then
         end)
     end
 
-    -- Broken binding "+zoom" on TTT #1
+    -- Broken binding '+zoom' on TTT #1
     if (is_ttt) then
-        hook.Add("PostGamemodeLoaded", "TTT +zoom fix", function()
+        hook.Add('PostGamemodeLoaded', 'TTT +zoom fix', function()
             function GAMEMODE:PlayerBindPress(ply, bind, pressed)
                 if not IsValid(ply) then return end
 
-                if bind == "invnext" and pressed then
+                if bind == 'invnext' and pressed then
                 if ply:IsSpec() then
                     TIPS.Next()
                 else
                     WSWITCH:SelectNext()
                 end
                 return true
-                elseif bind == "invprev" and pressed then
+                elseif bind == 'invprev' and pressed then
                 if ply:IsSpec() then
                     TIPS.Prev()
                 else
                     WSWITCH:SelectPrev()
                 end
                 return true
-                elseif bind == "+attack" then
+                elseif bind == '+attack' then
                 if WSWITCH:PreventAttack() then
                     if not pressed then
                         WSWITCH:ConfirmSelection()
                     end
                     return true
                 end
-                elseif bind == "+sprint" then
+                elseif bind == '+sprint' then
                 -- set voice type here just in case shift is no longer down when the
                 -- PlayerStartVoice hook runs, which might be the case when switching to
                 -- steam overlay
                 ply.traitor_gvoice = false
-                RunConsoleCommand("tvog", "0")
+                RunConsoleCommand('tvog', '0')
                 return true
-                elseif bind == "+use" and pressed then
+                elseif bind == '+use' and pressed then
                 if ply:IsSpec() then
-                    RunConsoleCommand("ttt_spec_use")
+                    RunConsoleCommand('ttt_spec_use')
                     return true
                 elseif TBHUD:PlayerIsFocused() then
                     return TBHUD:UseFocused()
                 end
-                elseif string.sub(bind, 1, 4) == "slot" and pressed then
+                elseif string.sub(bind, 1, 4) == 'slot' and pressed then
                 local idx = tonumber(string.sub(bind, 5, -1)) or 1
 
                 -- if radiomenu is open, override weapon select
@@ -383,19 +381,19 @@ if (CLIENT) then
                     WSWITCH:SelectSlot(idx)
                 end
                 return true
-                elseif bind == "+zoom" and pressed then
+                elseif bind == '+zoom' and pressed then
                 -- open or close radio
                 RADIO:ShowRadioCommands(not RADIO.Show)
                 return true
-                elseif bind == "+voicerecord" then
+                elseif bind == '+voicerecord' then
                 if not VOICE.CanSpeak() then
                     return true
                 end
-                elseif bind == "gm_showteam" and pressed and ply:IsSpec() then
+                elseif bind == 'gm_showteam' and pressed and ply:IsSpec() then
                 local m = VOICE.CycleMuteState()
-                RunConsoleCommand("ttt_mute_team", m)
+                RunConsoleCommand('ttt_mute_team', m)
                 return true
-                elseif bind == "+duck" and pressed and ply:IsSpec() then
+                elseif bind == '+duck' and pressed and ply:IsSpec() then
                 if not IsValid(ply:GetObserverTarget()) then
                     if GAMEMODE.ForcedMouse then
                         gui.EnableScreenClicker(false)
@@ -405,16 +403,16 @@ if (CLIENT) then
                         GAMEMODE.ForcedMouse = true
                     end
                 end
-                elseif bind == "noclip" and pressed then
-                if not GetConVar("sv_cheats"):GetBool() then
-                    RunConsoleCommand("ttt_equipswitch")
+                elseif bind == 'noclip' and pressed then
+                if not GetConVar('sv_cheats'):GetBool() then
+                    RunConsoleCommand('ttt_equipswitch')
                     return true
                 end
-                elseif (bind == "gmod_undo" or bind == "undo") and pressed then
-                RunConsoleCommand("ttt_dropammo")
+                elseif (bind == 'gmod_undo' or bind == 'undo') and pressed then
+                RunConsoleCommand('ttt_dropammo')
                 return true
-                elseif bind == "phys_swap" and pressed then
-                RunConsoleCommand("ttt_quickslot", "5")
+                elseif bind == 'phys_swap' and pressed then
+                RunConsoleCommand('ttt_quickslot', '5')
                 end
             end
         end)
@@ -440,11 +438,11 @@ if (CLIENT) then
 
         end
 
-        __RandomPatches["derma.DefineControl"] = derma.DefineControl
-        local func = __RandomPatches["derma.DefineControl"]
+        __RandomPatches['derma.DefineControl'] = derma.DefineControl
+        local func = __RandomPatches['derma.DefineControl']
 
         function derma.DefineControl( name, description, tab, base )
-            if (name == "DScrollPanel") then
+            if (name == 'DScrollPanel') then
                 tab.PerformLayoutInternal = replace
             end
 
@@ -456,21 +454,21 @@ if (CLIENT) then
     do
 
         local ENT = {}
-        ENT.Base = "base_anim"
-        ENT.ClassName = "prop_client"
+        ENT.Base = 'base_anim'
+        ENT.ClassName = 'prop_client'
 
         function ENT:Draw( fl )
             self:DrawModel( fl )
         end
 
-        scripted_ents.Register( ENT, "prop_client" )
+        scripted_ents.Register( ENT, 'prop_client' )
 
     end
 
     do
         local ents_CreateClientside = ents.CreateClientside
         function ents.CreateClientProp( mdl )
-            local ent = ents_CreateClientside( "prop_client" )
+            local ent = ents_CreateClientside( 'prop_client' )
             if IsValid( ent ) then
                 if (mdl ~= nil) then
                     ent:SetModel( Model( mdl ) )
@@ -495,7 +493,7 @@ if (SERVER) and not game.SinglePlayer() then
 
         local workshop_content = {
             -- Sand texture fix
-            "1619797564",
+            '1619797564',
         }
 
         for num, wsid in ipairs( workshop_content ) do
@@ -505,12 +503,12 @@ if (SERVER) and not game.SinglePlayer() then
     end
 
     -- TF2 Maps fix
-    if IsMounted( "tf" ) then
+    if IsMounted( 'tf' ) then
         local map = game.GetMap()
-        for num, tag in ipairs( {"pl_", "tr_", "to_", "sd_", "rd_", "plr_", "pd_", "pass_", "mvm_", "koth_", "ctf_", "cp_", "arena_"} ) do
+        for num, tag in ipairs( {'pl_', 'tr_', 'to_', 'sd_', 'rd_', 'plr_', 'pd_', 'pass_', 'mvm_', 'koth_', 'ctf_', 'cp_', 'arena_'} ) do
             if map:StartWith( tag ) then
-                MsgN( "[Random Patches] Activated TF2 textures replacement." )
-                resource.AddWorkshop( "110560370" )
+                MsgN( '[Random Patches] Activated TF2 textures replacement.' )
+                resource.AddWorkshop( '110560370' )
                 break
             end
         end
@@ -519,28 +517,28 @@ if (SERVER) and not game.SinglePlayer() then
     -- Simple server protection
     do
 
-        local family_sharing = CreateConVar("allow_family_sharing", "0", FCVAR_ARCHIVE, " - Allows connecting players with family shared Garry's Mod copy.", 0, 1 ):GetBool()
-        cvars.AddChangeCallback("allow_family_sharing", function( name, old, new )
-            family_sharing = new == "1"
+        local family_sharing = CreateConVar('allow_family_sharing', '0', FCVAR_ARCHIVE, ' - Allows connecting players with family shared Garry\'s Mod copy.', 0, 1 ):GetBool()
+        cvars.AddChangeCallback('allow_family_sharing', function( name, old, new )
+            family_sharing = new == '1'
         end)
 
-        hook.Add("PlayerInitialSpawn", addon_name, function( ply )
+        hook.Add('PlayerInitialSpawn', addon_name, function( ply )
             if ply:IsBot() or ply:IsListenServerHost() then return end
 
             if not ply:IsFullyAuthenticated() then
-                ply:Kick( "Your SteamID wasn't fully authenticated, try restart steam." )
+                ply:Kick( 'Your SteamID wasn\'t fully authenticated, try restart steam.' )
             end
 
             if family_sharing and (ply:OwnerSteamID64() ~= ply:SteamID64()) then
-                ply:Kick( "Family sharing restricted!" )
+                ply:Kick( 'Family sharing restricted!' )
             end
         end)
 
         do
             local connect_times = {}
-            hook.Add("CheckPassword", addon_name, function( sid64 )
+            hook.Add('CheckPassword', addon_name, function( sid64 )
                 if (connect_times[ sid64 ] ~= nil) and (connect_times[ sid64 ] > SysTime()) then
-                    return false, "Too fast. Please be slowly :)"
+                    return false, 'Too fast. Please be slowly :)'
                 end
 
                 connect_times[ sid64 ] = SysTime() + 5
@@ -551,4 +549,4 @@ if (SERVER) and not game.SinglePlayer() then
 
 end
 
-MsgC( "\n[" .. addon_name .." v" .. version .. "] ", HSVToColor( math.random( 360 ) % 360, 0.9, 0.8 ), "Game Patched!\n" )
+MsgC( '\n[' .. addon_name ..' v' .. version .. '] ', HSVToColor( math.random( 360 ) % 360, 0.9, 0.8 ), 'Game Patched!\n' )
