@@ -74,7 +74,6 @@ do
 		return false
 	end
 
-
 	hook.Add('GameContentChanged', addonName .. ' - Improved IsMounted', cacheMounted)
 	cacheMounted()
 
