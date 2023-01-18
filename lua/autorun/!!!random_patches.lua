@@ -7,7 +7,7 @@
 --]]
 
 local addonName = 'Random Patches'
-local version = '3.0.0'
+local version = '3.0.1'
 
 function IsValid( object )
 	if (object == nil) then return false end
@@ -53,25 +53,27 @@ end
 do
 
 	local engine_GetGames = engine.GetGames
-	local function cacheMounted()
+	local mounted = {}
 
-		local mounted = {}
+	local function cacheMounted()
+		table.Empty( mounted )
+
 		for _, tbl in ipairs( engine_GetGames() ) do
 			if tbl.mounted then
 				mounted[ tbl.folder ] = true
 				mounted[ tbl.depot ] = true
 			end
 		end
+	end
 
-		function IsMounted( name )
-			if mounted[ name ] then
-				return true
-			end
-
-			return false
+	function IsMounted( name )
+		if mounted[ name ] then
+			return true
 		end
 
+		return false
 	end
+
 
 	hook.Add('GameContentChanged', addonName .. ' - Improved IsMounted', cacheMounted)
 	cacheMounted()
