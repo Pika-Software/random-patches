@@ -7,7 +7,7 @@
 --]]
 
 local addonName = 'Random Patches'
-local version = '3.0.1'
+local version = '3.1.0'
 
 function IsValid( object )
 	if (object == nil) then return false end
@@ -186,49 +186,6 @@ if (SERVER) then
 				end)
 			end
 		end)
-
-	end
-
-end
-
-if (CLIENT) then
-
-	-- Fix Client Side Props
-	do
-
-		local ENT = {
-			['Base'] = 'base_anim',
-			['ClassName'] = 'prop_client'
-		}
-
-		function ENT:Draw( fl )
-			self:DrawModel( fl )
-		end
-
-		scripted_ents.Register( ENT, 'prop_client' )
-
-	end
-
-	do
-
-		local ents_CreateClientside = ents.CreateClientside
-		local Model = Model
-
-		function ents.CreateClientProp( model )
-			local ent = ents_CreateClientside( 'prop_client' )
-			if IsValid( ent ) then
-				if (model ~= nil) then
-					ent:SetModel( Model( model ) )
-				end
-
-				ent:SetMoveType( MOVETYPE_VPHYSICS )
-				ent:PhysicsInit( SOLID_VPHYSICS )
-				ent:SetSolid( SOLID_VPHYSICS )
-				ent:PhysWake()
-			end
-
-			return ent
-		end
 
 	end
 
