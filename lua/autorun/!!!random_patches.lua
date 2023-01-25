@@ -191,4 +191,5 @@ if (SERVER) then
 
 end
 
-MsgC( string.format( '[%s v%s] ', addonName, version ), HSVToColor( math.random( 360 ) % 360, 0.9, 0.8 ), 'Game Patched!\n' )
+
+MsgC( SERVER and Color( 50, 100, 250 ) or Color( 250, 100, 50 ), string.format( '[%s v%s] ', addonName, version ), color_white, 'Game Patched!\n' )
