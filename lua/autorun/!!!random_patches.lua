@@ -217,6 +217,49 @@ if (CLIENT) then
 
 	end
 
+	-- Look Up/Down Fix
+	do
+
+		local hookName = addonName .. ' - Look up/down Fix'
+		local cl_pitchspeed = GetConVar( 'cl_pitchspeed' )
+		local lookDown = false
+		local lookUp = false
+
+		hook.Add('PlayerBindPress', hookName, function( ply, bindName, isDown )
+			if (isDown) then
+				local bind = string_sub( bindName, 2, #bindName )
+				if (bind == 'lookdown') then
+					lookDown = string_sub( bindName, 1, 1 ) == '+'
+					return true
+				elseif (bind == 'lookup') then
+					lookUp = string_sub( bindName, 1, 1 ) == '+'
+					return true
+				end
+			end
+		end)
+
+		hook.Add('Think', hookName, function()
+			if (lookDown) then
+				local ply = LocalPlayer()
+				if IsValid( ply ) then
+					local ang = ply:EyeAngles()
+					ang[1] = ang[1] + cl_pitchspeed:GetFloat() * FrameTime() / (ply:KeyDown( IN_SPEED ) and 1.5 or 1)
+					ply:SetEyeAngles( ang )
+				end
+			end
+
+			if (lookUp) then
+				local ply = LocalPlayer()
+				if IsValid( ply ) then
+					local ang = ply:EyeAngles()
+					ang[1] = ang[1] - cl_pitchspeed:GetFloat() * FrameTime() / (ply:KeyDown( IN_SPEED ) and 1.5 or 1)
+					ply:SetEyeAngles( ang )
+				end
+			end
+		end)
+
+	end
+
 end
 
 MsgC( SERVER and Color( 50, 100, 250 ) or Color( 250, 100, 50 ), string.format( '[%s v%s] ', addonName, version ), color_white, 'Game Patched!\n' )
