@@ -7,6 +7,8 @@
 --]]
 
 local addonName = 'Random Patches'
+local version = '3.2.0'
+
 -- Just in case, white should stay white.
 color_white = Color( 255, 255, 255 )
 
