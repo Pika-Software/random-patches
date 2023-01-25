@@ -191,5 +191,32 @@ if (SERVER) then
 
 end
 
+if (CLIENT) then
+
+	local string_StartsWith = string.StartWith or string.StartsWith
+	local string_sub = string.sub
+
+	-- Bind Fix
+	do
+
+		local hookName = addonName .. ' - Bind\'s Fix'
+		local bindsPressed = {}
+
+		hook.Add('PlayerBindPress', hookName, function( _, bindName, isDown, keyCode )
+			if string_StartsWith( bindName, '+' ) then
+				bindsPressed[ keyCode ] = string_sub( bindName, 2, #bindName )
+			end
+		end)
+
+		hook.Add('PlayerButtonUp', hookName, function( ply, keyCode )
+			local bindName = bindsPressed[ keyCode ]
+			if (bindName == nil) or !IsFirstTimePredicted() then return end
+			hook.Run( 'PlayerBindPress', ply, '-' .. bindName, true, keyCode )
+			bindsPressed[ keyCode ] = nil
+		end)
+
+	end
+
+end
 
 MsgC( SERVER and Color( 50, 100, 250 ) or Color( 250, 100, 50 ), string.format( '[%s v%s] ', addonName, version ), color_white, 'Game Patched!\n' )
