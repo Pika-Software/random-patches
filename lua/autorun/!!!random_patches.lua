@@ -7,7 +7,7 @@
 --]]
 
 local addonName = 'Random Patches'
-local version = '3.2.0'
+local version = '3.3.0'
 
 -- Just in case, white should stay white.
 color_white = Color( 255, 255, 255 )
@@ -83,6 +83,9 @@ do
 end
 
 if (SERVER) then
+
+	-- Normal Deploy Speed
+	RunConsoleCommand( 'sv_defaultdeployspeed', '1' )
 
 	-- Missing Stuff
 	CreateConVar( 'room_type', '0' )
