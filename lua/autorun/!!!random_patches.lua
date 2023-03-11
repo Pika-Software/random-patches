@@ -7,7 +7,7 @@
 --]]
 
 local addonName = 'Random Patches'
-local version = '3.3.0'
+local version = '3.3.1'
 
 -- Just in case, white should stay white.
 color_white = Color( 255, 255, 255 )
@@ -25,6 +25,7 @@ function IsValid( object )
 	return func( object )
 end
 
+local IsValid = IsValid
 local ipairs = ipairs
 local table = table
 local math = math
@@ -40,7 +41,7 @@ function table.Shuffle( tbl )
 	local len = #tbl
 	for i = len, 1, -1 do
 		local rand = math.random( len )
-		tbl[i], tbl[rand] = tbl[rand], tbl[i]
+		tbl[ i ], tbl[ rand ] = tbl[ rand ], tbl[ i ]
 	end
 
 	return tbl
@@ -48,7 +49,7 @@ end
 
 function table.Random( tbl, issequential )
 	local keys = issequential and tbl or table.GetKeys( tbl )
-	local rand = keys[ math.random(1, #keys) ]
+	local rand = keys[ math.random( 1, #keys ) ]
 	return tbl[ rand ], rand
 end
 
@@ -77,29 +78,29 @@ do
 		return false
 	end
 
-	hook.Add('GameContentChanged', addonName .. ' - Improved IsMounted', cacheMounted)
+	hook.Add( 'GameContentChanged', addonName .. ' - Improved IsMounted', cacheMounted )
 	cacheMounted()
 
 end
 
-if (SERVER) then
+if SERVER then
 
 	-- Normal Deploy Speed
 	RunConsoleCommand( 'sv_defaultdeployspeed', '1' )
 
 	-- Missing Stuff
 	CreateConVar( 'room_type', '0' )
-	scripted_ents.Register({
+	scripted_ents.Register( {
 		['Base'] = 'base_point',
 		['Type'] = 'point'
-	}, 'info_ladder')
+	}, 'info_ladder' )
 
 	-- Area portals fix
 	do
 
 		local mapIsCleaning = false
-		hook.Add('PreCleanupMap', addonName .. ' - Area Portal Fix', function() mapIsCleaning = true end)
-		hook.Add('PostCleanupMap', addonName .. ' - Area Portal Fix', function() mapIsCleaning = false end)
+		hook.Add( 'PreCleanupMap', addonName .. ' - Area Portal Fix', function() mapIsCleaning = true end )
+		hook.Add( 'PostCleanupMap', addonName .. ' - Area Portal Fix', function() mapIsCleaning = false end )
 
 		local doorClasses = {
 			['func_door_rotating'] = true,
@@ -109,7 +110,7 @@ if (SERVER) then
 		}
 
 		local ents_FindByClass = ents.FindByClass
-		hook.Add('EntityRemoved', addonName .. ' - Area Portal Fix', function( ent )
+		hook.Add( 'EntityRemoved', addonName .. ' - Area Portal Fix', function( ent )
 			if (mapIsCleaning) then return end
 			if IsValid( ent ) and doorClasses[ ent:GetClass() ] then
 				local name = ent:GetName()
@@ -122,29 +123,29 @@ if (SERVER) then
 					end
 				end
 			end
-		end)
+		end )
 
 	end
 
 	-- Fixes for prop_vehicle_prisoner_pod, worldspawn (and other not Valid but not NULL entities) damage taking (bullets only)
 	-- Explosive damage only works if is located in front of prop_vehicle_prisoner_pod (wtf?)
-	hook.Add('EntityTakeDamage', addonName .. ' - PrisonerFix', function( ent, dmg )
+	hook.Add( 'EntityTakeDamage', addonName .. ' - PrisonerFix', function( ent, dmg )
 		if IsValid( ent ) then
 			if ent:IsNPC() then return end
 			if ent.AcceptDamageForce or ent:GetClass() == 'prop_vehicle_prisoner_pod' then
 				ent:TakePhysicsDamage( dmg )
 			end
 		end
-	end)
+	end )
 
-	hook.Add('OnFireBulletCallback', addonName .. ' - PrisonerTakeDamage', function( attk, tr, cdmg )
+	hook.Add( 'OnFireBulletCallback', addonName .. ' - PrisonerTakeDamage', function( attk, tr, cdmg )
 		local ent = tr.Entity
 		if (ent ~= NULL) then
 			hook.Run( 'EntityTakeDamage', ent, cdmg )
 		end
-	end)
+	end )
 
-	hook.Add('EntityFireBullets', addonName .. ' - BulletCallbackHook', function( ent, data )
+	hook.Add( 'EntityFireBullets', addonName .. ' - BulletCallbackHook', function( ent, data )
 		local old_callback = data.Callback
 		function data.Callback( attk, tr, cdmg, ... )
 			hook.Run( 'OnFireBulletCallback', attk, tr, cdmg, ... )
@@ -154,32 +155,32 @@ if (SERVER) then
 		end
 
 		return true
-	end)
+	end )
 
 	-- Steam Auth Check
-	hook.Add('PlayerInitialSpawn', addonName .. ' - Steam Auth Check', function( ply )
+	hook.Add( 'PlayerInitialSpawn', addonName .. ' - Steam Auth Check', function( ply )
 		if ply:IsBot() or ply:IsListenServerHost() or ply:IsFullyAuthenticated() then return end
 		ply:Kick( 'Your SteamID wasn\'t fully authenticated, try restart steam.' )
-	end)
+	end )
 
 	-- Pod Fix
 	do
 
 		local EFL_NO_THINK_FUNCTION = EFL_NO_THINK_FUNCTION
 
-		hook.Add('OnEntityCreated', addonName .. ' - Pod Fix', function( veh )
+		hook.Add( 'OnEntityCreated', addonName .. ' - Pod Fix', function( veh )
 			if (veh:GetClass() == 'prop_vehicle_prisoner_pod') then
 				veh:AddEFlags( EFL_NO_THINK_FUNCTION )
 			end
-		end)
+		end )
 
-		hook.Add('PlayerEnteredVehicle', addonName .. ' - Pod Fix', function( _, veh )
+		hook.Add( 'PlayerEnteredVehicle', addonName .. ' - Pod Fix', function( _, veh )
 			if (veh:GetClass() == 'prop_vehicle_prisoner_pod') then
 				veh:RemoveEFlags( EFL_NO_THINK_FUNCTION )
 			end
-		end)
+		end )
 
-		hook.Add('PlayerLeaveVehicle', addonName .. ' - Pod Fix', function( _, veh )
+		hook.Add( 'PlayerLeaveVehicle', addonName .. ' - Pod Fix', function( _, veh )
 			if (veh:GetClass() == 'prop_vehicle_prisoner_pod') then
 				hook.Add('Think', veh, function( self )
 					if self:GetInternalVariable( 'm_bEnterAnimOn' ) then
@@ -191,7 +192,7 @@ if (SERVER) then
 					end
 				end)
 			end
-		end)
+		end )
 
 	end
 
@@ -208,18 +209,18 @@ if (CLIENT) then
 		local hookName = addonName .. ' - Bind\'s Fix'
 		local bindsPressed = {}
 
-		hook.Add('PlayerBindPress', hookName, function( _, bindName, isDown, keyCode )
+		hook.Add( 'PlayerBindPress', hookName, function( _, bindName, isDown, keyCode )
 			if string_StartsWith( bindName, '+' ) then
 				bindsPressed[ keyCode ] = string_sub( bindName, 2, #bindName )
 			end
-		end)
+		end )
 
-		hook.Add('PlayerButtonUp', hookName, function( ply, keyCode )
+		hook.Add( 'PlayerButtonUp', hookName, function( ply, keyCode )
 			local bindName = bindsPressed[ keyCode ]
-			if (bindName == nil) or !IsFirstTimePredicted() then return end
+			if (bindName == nil) or not IsFirstTimePredicted() then return end
 			hook.Run( 'PlayerBindPress', ply, '-' .. bindName, true, keyCode )
 			bindsPressed[ keyCode ] = nil
-		end)
+		end )
 
 	end
 
@@ -231,8 +232,8 @@ if (CLIENT) then
 		local lookDown = false
 		local lookUp = false
 
-		hook.Add('PlayerBindPress', hookName, function( ply, bindName, isDown )
-			if (isDown) then
+		hook.Add( 'PlayerBindPress', hookName, function( ply, bindName, isDown )
+			if isDown then
 				local bind = string_sub( bindName, 2, #bindName )
 				if (bind == 'lookdown') then
 					lookDown = string_sub( bindName, 1, 1 ) == '+'
@@ -242,10 +243,18 @@ if (CLIENT) then
 					return true
 				end
 			end
-		end)
+		end )
 
-		hook.Add('Think', hookName, function()
-			if (lookDown) then
+		local system_HasFocus = system.HasFocus
+
+		hook.Add( 'Think', hookName, function()
+			if not system_HasFocus() then
+				lookDown = false
+				lookUp = false
+				return
+			end
+
+			if lookDown then
 				local ply = LocalPlayer()
 				if IsValid( ply ) then
 					local ang = ply:EyeAngles()
@@ -254,7 +263,7 @@ if (CLIENT) then
 				end
 			end
 
-			if (lookUp) then
+			if lookUp then
 				local ply = LocalPlayer()
 				if IsValid( ply ) then
 					local ang = ply:EyeAngles()
@@ -262,7 +271,7 @@ if (CLIENT) then
 					ply:SetEyeAngles( ang )
 				end
 			end
-		end)
+		end )
 
 	end
 
