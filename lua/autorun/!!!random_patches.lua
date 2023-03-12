@@ -130,11 +130,11 @@ if SERVER then
 	-- Fixes for prop_vehicle_prisoner_pod, worldspawn (and other not Valid but not NULL entities) damage taking (bullets only)
 	-- Explosive damage only works if is located in front of prop_vehicle_prisoner_pod (wtf?)
 	hook.Add( 'EntityTakeDamage', addonName .. ' - PrisonerFix', function( ent, dmg )
-		if IsValid( ent ) then
-			if ent:IsNPC() then return end
-			if ent.AcceptDamageForce or ent:GetClass() == 'prop_vehicle_prisoner_pod' then
-				ent:TakePhysicsDamage( dmg )
-			end
+		if not IsValid( ent ) then return end
+		if ent:IsNPC() then return end
+
+		if ent.AcceptDamageForce or ent:GetClass() == 'prop_vehicle_prisoner_pod' then
+			ent:TakePhysicsDamage( dmg )
 		end
 	end )
 
