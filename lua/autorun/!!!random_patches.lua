@@ -7,7 +7,7 @@
 --]]
 
 local addonName = 'Random Patches'
-local version = '3.4.0'
+local version = '3.4.1'
 
 -- Just in case, white should stay white.
 color_white = Color( 255, 255, 255 )
@@ -224,6 +224,8 @@ if SERVER then
 
 	-- Steam Auth Check
 	hook.Add( 'PlayerInitialSpawn', addonName .. ' - Steam Auth Check', function( ply )
+		-- If lan server, no authentication - no checks (fixes -multirun)
+		if GetConVar( 'sv_lan' ):GetBool() then return end
 		if ply:IsBot() or ply:IsListenServerHost() or ply:IsFullyAuthenticated() then return end
 		ply:Kick( 'Your SteamID wasn\'t fully authenticated, try restart steam.' )
 	end )
