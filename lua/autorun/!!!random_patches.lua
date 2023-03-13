@@ -95,7 +95,7 @@ if SERVER then
 		['Base'] = 'base_point',
 		['Type'] = 'point'
 	}, 'info_ladder' )
-	
+
 	-- ENTITY metatable optimization
 	-- Based on Earu#7089 ENTITY.__index optimization
 	-- Edited by Jaff#2843 and Radon#0952
@@ -115,7 +115,7 @@ if SERVER then
 
 			debug.setmetatable(ent, {
 				__index = tab,
-				__newindex = tab, 
+				__newindex = tab,
 				__metatable = ENTITY,
 
 				MetaID = entMetaID,
@@ -137,7 +137,7 @@ if SERVER then
 			end
 		end, HOOK_MONITOR_HIGH )
 	end
-	
+
 	-- Little optimization idea by Billy (used in voicebox)
 	-- "for something that really shouldn't be O(n)"
 	-- https://i.imgur.com/yPtoNvO.png
@@ -146,11 +146,11 @@ if SERVER then
 		local meta = FindMetaTable( 'Player' )
 		if meta.UserID and debug.getinfo( meta.UserID ).short_src == '[C]' then
 			RandomPatches_UserID = RandomPatches_UserID or meta.UserID
-		
+
 			function meta:UserID()
 				return self.__UserID or RandomPatches_UserID( self )
 			end
-		
+
 			local function CacheUserID( ply )
 				ply.__UserID = RandomPatches_UserID( ply )
 			end
