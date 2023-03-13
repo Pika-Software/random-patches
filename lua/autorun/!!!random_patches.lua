@@ -7,7 +7,7 @@
 --]]
 
 local addonName = 'Random Patches'
-local version = '3.4.1'
+local version = '3.4.2'
 
 -- Just in case, white should stay white.
 color_white = Color( 255, 255, 255 )
@@ -212,14 +212,12 @@ if SERVER then
 	-- Literally garrysmod-requests #1845
 	hook.Add( 'EntityFireBullets', addonName .. ' - BulletCallbackHook', function( ent, data )
 		local old_callback = data.Callback
-		function data.Callback( attk, tr, cdmg, ... )
-			hook.Run( 'OnFireBulletCallback', attk, tr, cdmg, ... )
+		function data.Callback( attk, tr, cdmg )
+			hook.Run( 'OnFireBulletCallback', attk, tr, cdmg )
 			if old_callback then
-				return old_callback( attk, tr, cdmg, ... )
+				return old_callback( attk, tr, cdmg )
 			end
 		end
-
-		return true
 	end, HOOK_MONITOR_HIGH )
 
 	-- Steam Auth Check
