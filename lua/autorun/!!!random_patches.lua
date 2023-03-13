@@ -228,7 +228,7 @@ if SERVER then
 		if GetConVar( 'sv_lan' ):GetBool() then return end
 		if ply:IsBot() or ply:IsListenServerHost() or ply:IsFullyAuthenticated() then return end
 		ply:Kick( 'Your SteamID wasn\'t fully authenticated, try restart steam.' )
-	end )
+	end, HOOK_MONITOR_HIGH )
 
 	-- Pod Fix
 	do
