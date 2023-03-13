@@ -7,7 +7,7 @@
 --]]
 
 local addonName = 'Random Patches'
-local version = '3.3.2'
+local version = '3.4.0'
 
 -- Just in case, white should stay white.
 color_white = Color( 255, 255, 255 )
@@ -53,7 +53,7 @@ function table.Random( tbl, issequential )
 	return tbl[ rand ], rand
 end
 
--- Improved is mounted
+-- Improved IsMounted
 do
 
 	local engine_GetGames = engine.GetGames
@@ -95,6 +95,48 @@ if SERVER then
 		['Base'] = 'base_point',
 		['Type'] = 'point'
 	}, 'info_ladder' )
+	
+	-- ENTITY metatable optimization
+	-- Based on Earu#7089 ENTITY.__index optimization
+	-- Edited by Jaff#2843 and Radon#0952
+	do
+		local ENTITY = FindMetaTable( 'Entity' )
+		local entTabMT = { __index = ENTITY }
+
+		local entMetaID = ENTITY.MetaID
+		local entMetaName = ENTITY.MetaName
+		local ent__tostring = ENTITY.__tostring
+		local ent__eq = ENTITY.__eq
+		local ent__concat = ENTITY.__concat
+
+		local function changeEntMetaTable(ent)
+			local tab = ent:GetTable()
+			setmetatable(tab, entTabMT)
+
+			debug.setmetatable(ent, {
+				__index = tab,
+				__newindex = tab, 
+				__metatable = ENTITY,
+
+				MetaID = entMetaID,
+				MetaName = entMetaName,
+				__tostring = ent__tostring,
+				__eq = ent__eq,
+				__concat = ent__concat,
+			})
+		end
+
+		hook.Add( 'OnEntityCreated', addonName .. ' - ChangeEntMeta', function(ent)
+			-- Experimental optimization, can be disabled by convar, report all problems on our github
+			if CreateConVar( 'randpatches_replace_entmeta', '1', FCVAR_ARCHIVE ):GetBool() then
+				timer.Simple(0, function()
+					if IsValid(ent) and getmetatable(ent) == ENTITY then
+						changeEntMetaTable(ent)
+					end
+				end)
+			end
+		end, HOOK_MONITOR_HIGH )
+	end
 	
 	-- Little optimization idea by Billy (used in voicebox)
 	-- "for something that really shouldn't be O(n)"
