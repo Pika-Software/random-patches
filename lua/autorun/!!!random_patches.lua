@@ -230,7 +230,8 @@ if SERVER then
 		ply:Kick( 'Your SteamID wasn\'t fully authenticated, try restart steam.' )
 	end, HOOK_MONITOR_HIGH )
 
-	-- Pod Fix
+	-- Pod network fix by Kefta (code_gs#4197)
+	-- Literally garrysmod-issues #2452
 	do
 
 		local EFL_NO_THINK_FUNCTION = EFL_NO_THINK_FUNCTION
