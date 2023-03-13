@@ -7,7 +7,7 @@
 --]]
 
 local addonName = 'Random Patches'
-local version = '3.3.1'
+local version = '3.3.2'
 
 -- Just in case, white should stay white.
 color_white = Color( 255, 255, 255 )
@@ -89,11 +89,33 @@ if SERVER then
 	RunConsoleCommand( 'sv_defaultdeployspeed', '1' )
 
 	-- Missing Stuff
+	-- From metastruct code
 	CreateConVar( 'room_type', '0' )
 	scripted_ents.Register( {
 		['Base'] = 'base_point',
 		['Type'] = 'point'
 	}, 'info_ladder' )
+	
+	-- Little optimization idea by Billy (used in voicebox)
+	-- "for something that really shouldn't be O(n)"
+	-- https://i.imgur.com/yPtoNvO.png
+	-- https://i.imgur.com/a0lmB9m.png
+	do
+		local meta = FindMetaTable( 'Player' )
+		if meta.UserID and debug.getinfo( meta.UserID ).short_src == '[C]' then
+			RandomPatches_UserID = RandomPatches_UserID or meta.UserID
+		
+			function meta:UserID()
+				return self.__UserID or RandomPatches_UserID( self )
+			end
+		
+			local function CacheUserID( ply )
+				ply.__UserID = RandomPatches_UserID( ply )
+			end
+			hook.Add( 'PlayerInitialSpawn', addonName .. ' - CacheUserID', CacheUserID, HOOK_MONITOR_HIGH )
+			hook.Add( 'PlayerAuthed', addonName .. ' - CacheUserID', CacheUserID, HOOK_MONITOR_HIGH )
+		end
+	end
 
 	-- Area portals fix
 	do
@@ -155,7 +177,7 @@ if SERVER then
 		end
 
 		return true
-	end )
+	end, HOOK_MONITOR_HIGH )
 
 	-- Steam Auth Check
 	hook.Add( 'PlayerInitialSpawn', addonName .. ' - Steam Auth Check', function( ply )
