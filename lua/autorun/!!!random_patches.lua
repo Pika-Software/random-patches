@@ -209,6 +209,7 @@ if SERVER then
 		end
 	end )
 
+	-- Literally garrysmod-requests #1845
 	hook.Add( 'EntityFireBullets', addonName .. ' - BulletCallbackHook', function( ent, data )
 		local old_callback = data.Callback
 		function data.Callback( attk, tr, cdmg, ... )
