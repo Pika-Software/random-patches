@@ -126,6 +126,7 @@ if SERVER then
 			})
 		end
 
+		--[[ -- Temporarily disabled due to critical metatable overflow bug
 		hook.Add( 'OnEntityCreated', addonName .. ' - ChangeEntMeta', function(ent)
 			-- Experimental optimization, can be disabled by convar, report all problems on our github
 			if CreateConVar( 'randpatches_replace_entmeta', '1', FCVAR_ARCHIVE ):GetBool() then
@@ -136,6 +137,7 @@ if SERVER then
 				end)
 			end
 		end, HOOK_MONITOR_HIGH )
+		]]
 	end
 
 	-- Little optimization idea by Billy (used in voicebox)
