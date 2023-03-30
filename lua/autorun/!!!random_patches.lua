@@ -99,6 +99,9 @@ if SERVER then
 	-- ENTITY metatable optimization
 	-- Based on Earu#7089 ENTITY.__index optimization
 	-- Edited by Jaff#2843 and Radon#0952
+	-- Temporarily disabled due to critical metatable overflow bug
+
+	--[[
 	do
 		local ENTITY = FindMetaTable( 'Entity' )
 		local entTabMT = { __index = ENTITY }
@@ -126,7 +129,6 @@ if SERVER then
 			})
 		end
 
-		--[[ -- Temporarily disabled due to critical metatable overflow bug
 		hook.Add( 'OnEntityCreated', addonName .. ' - ChangeEntMeta', function(ent)
 			-- Experimental optimization, can be disabled by convar, report all problems on our github
 			if CreateConVar( 'randpatches_replace_entmeta', '1', FCVAR_ARCHIVE ):GetBool() then
@@ -137,8 +139,8 @@ if SERVER then
 				end)
 			end
 		end, HOOK_MONITOR_HIGH )
-		]]
 	end
+	--]]
 
 	-- Little optimization idea by Billy (used in voicebox)
 	-- "for something that really shouldn't be O(n)"
