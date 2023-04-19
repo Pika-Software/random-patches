@@ -7,10 +7,7 @@
 --]]
 
 local addonName = 'Random Patches'
-local version = '3.5.1'
-
--- Just in case, white should stay white.
-color_white = Color( 255, 255, 255 )
+local version = '3.6.0'
 
 function IsValid( object )
 	if (object == nil) then return false end
@@ -268,7 +265,7 @@ if SERVER then
 
 end
 
-if (CLIENT) then
+if CLIENT then
 
 	local string_StartsWith = string.StartWith or string.StartsWith
 	local string_sub = string.sub
@@ -342,6 +339,23 @@ if (CLIENT) then
 				end
 			end
 		end )
+
+	end
+
+	-- speeding up LocalPlayer
+	do
+
+		local ply
+		local _LocalPlayer = LocalPlayer
+
+		function LocalPlayer()
+			ply = _LocalPlayer()
+			if IsValid( ply ) then
+				LocalPlayer = function() return ply end
+			end
+
+			return ply
+		end
 
 	end
 
