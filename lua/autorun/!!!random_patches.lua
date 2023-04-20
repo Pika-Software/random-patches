@@ -263,6 +263,30 @@ if SERVER then
 
 	end
 
+	-- Fix for https://github.com/Facepunch/garrysmod-issues/issues/2447
+	-- https://github.com/SuperiorServers/dash/blob/master/lua/dash/extensions/player.lua#L44-L57
+	local ENTITY, PLAYER = FindMetaTable( 'Entity' ), FindMetaTable( 'Player' )
+	ENTITY.CSetPos = ENTITY.CSetPos or ENTITY.SetPos
+
+	do
+
+		local queue = {}
+		function PLAYER:SetPos( pos )
+			queue[ self ] = pos
+		end
+
+		hook.Add( 'FinishMove', addonName .. ' - SetPos Fix', function( ply )
+			local pos = queue[ ply ]
+			if not pos then return end
+
+			ENTITY.CSetPos( ply, pos )
+			queue[ ply ] = nil
+
+			return true
+		end )
+
+	end
+
 end
 
 if CLIENT then
