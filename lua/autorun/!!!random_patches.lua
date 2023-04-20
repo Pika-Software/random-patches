@@ -269,17 +269,17 @@ if SERVER then
 
 	do
 
-		local queue = {}
+		local positions = {}
 		function PLAYER:SetPos( pos )
-			queue[ self ] = pos
+			positions[ self ] = pos
 		end
 
 		hook.Add( 'FinishMove', addonName .. ' - SetPos Fix', function( ply )
-			local pos = queue[ ply ]
+			local pos = positions[ ply ]
 			if not pos then return end
 
 			ENTITY.SetPos( ply, pos )
-			queue[ ply ] = nil
+			positions[ ply ] = nil
 
 			return true
 		end )
