@@ -266,7 +266,6 @@ if SERVER then
 	-- Fix for https://github.com/Facepunch/garrysmod-issues/issues/2447
 	-- https://github.com/SuperiorServers/dash/blob/master/lua/dash/extensions/player.lua#L44-L57
 	local ENTITY, PLAYER = FindMetaTable( 'Entity' ), FindMetaTable( 'Player' )
-	ENTITY.CSetPos = ENTITY.CSetPos or ENTITY.SetPos
 
 	do
 
@@ -279,7 +278,7 @@ if SERVER then
 			local pos = queue[ ply ]
 			if not pos then return end
 
-			ENTITY.CSetPos( ply, pos )
+			ENTITY.SetPos( ply, pos )
 			queue[ ply ] = nil
 
 			return true
