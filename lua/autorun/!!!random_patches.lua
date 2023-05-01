@@ -181,7 +181,7 @@ if SERVER then
 				local name = ent:GetName()
 				if (name ~= '') then
 					for _, portal in ipairs( ents_FindByClass( 'func_areaportal' ) ) do
-						if (portal:GetInternalVariable( 'target' ) == name) then
+						if portal:GetInternalVariable( 'target' ) == name then
 							portal:SetSaveValue( 'target', '' )
 							portal:Fire( 'open' )
 						end
