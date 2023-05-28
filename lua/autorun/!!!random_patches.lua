@@ -1,5 +1,5 @@
 local addonName = "Random Patches"
-local version = "3.7.0"
+local version = "3.8.0"
 local NULL = NULL
 
 function IsValid( object )
@@ -253,6 +253,27 @@ if SERVER then
 
 	end
 
+	-- Chargers physics fix
+	do
+
+		local SOLID_VPHYSICS = SOLID_VPHYSICS
+		local timer_Simple = timer.Simple
+
+		hook.Add( "OnEntityCreated", addonName .. " - Chargers physics fix", function( ent )
+			if ent:CreatedByMap() then return end
+
+			timer_Simple( 0, function()
+				if not IsValid( ent ) then return end
+
+				local className = ent:GetClass()
+				if className ~= "item_suitcharger" and className ~= "item_healthcharger" then return end
+				ent:PhysicsInit( SOLID_VPHYSICS )
+				ent:PhysWake()
+			end )
+		end )
+
+	end
+
 	-- Fix for https://github.com/Facepunch/garrysmod-issues/issues/2447
 	-- https://github.com/SuperiorServers/dash/blob/master/lua/dash/extensions/player.lua#L44-L57
 	local ENTITY, PLAYER = FindMetaTable( "Entity" ), FindMetaTable( "Player" )
@@ -305,6 +326,7 @@ if CLIENT then
 
 		local hookName = addonName .. " - Look up/down fix"
 		local cl_pitchspeed = GetConVar( "cl_pitchspeed" )
+		local system_HasFocus = system.HasFocus
 		local lookDown = false
 		local lookUp = false
 
@@ -320,8 +342,6 @@ if CLIENT then
 				return true
 			end
 		end )
-
-		local system_HasFocus = system.HasFocus
 
 		hook.Add( "Think", hookName, function()
 			if not system_HasFocus() then
@@ -368,6 +388,25 @@ if CLIENT then
 
 			return ply
 		end
+
+	end
+
+	-- Shoots in focus fix
+	do
+
+		local system_HasFocus = system.HasFocus
+		local lastNoFocusTime = 0
+		local CurTime = CurTime
+
+		hook.Add( "CreateMove", addonName .. " - Shoots in focus fix", function( cmd )
+			if CurTime() - lastNoFocusTime < 0.25 then
+				cmd:RemoveKey( IN_ATTACK )
+				cmd:RemoveKey( IN_ATTACK2 )
+			end
+
+			if system_HasFocus() then return end
+			lastNoFocusTime = CurTime()
+		end )
 
 	end
 
