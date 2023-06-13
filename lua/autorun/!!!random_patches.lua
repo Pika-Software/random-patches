@@ -1,5 +1,5 @@
 local addonName = "Random Patches"
-local version = "3.8.0"
+local version = "3.9.0"
 local NULL = NULL
 
 function IsValid( object )
@@ -12,6 +12,7 @@ function IsValid( object )
 	return func( object )
 end
 
+local color_white = color_white
 local IsValid = IsValid
 local ipairs = ipairs
 local string = string
@@ -77,6 +78,19 @@ if SERVER then
 
 	-- Normal Deploy Speed
 	RunConsoleCommand( "sv_defaultdeployspeed", "1" )
+
+	-- Decals after death fix
+	util.AddNetworkString( addonName )
+
+	hook.Add( "PlayerSpawn", addonName .. " - Decals after death", function( ply, transition )
+		if transition then return end
+		ply:SetColor( color_white )
+		ply:RemoveAllDecals()
+
+		net.Start( addonName )
+			net.WriteEntity( ply )
+		net.Broadcast()
+	end )
 
 	-- Missing Stuff
 	-- From metastruct code
@@ -300,6 +314,12 @@ if SERVER then
 end
 
 if CLIENT then
+
+	net.Receive( addonName, function()
+		local entity = net.ReadEntity()
+		if not IsValid( entity ) then return end
+		entity:RemoveAllDecals()
+	end )
 
 	-- Bind Fix
 	do
