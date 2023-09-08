@@ -1,3 +1,4 @@
+local realmColor = SERVER and Color( 50, 100, 250 ) or Color( 250, 100, 50 )
 local addonName = "Random Patches"
 local version = "4.0.0"
 
@@ -95,14 +96,16 @@ do
 	local actions = {
 		["list"] = function( args )
 			local str = "Patches:\n"
+			for name, cvarName in pairs( rpatches.List ) do
+				local state = "*"
+				if cvarName and not cvars.Bool( cvarName, false ) then
+					state = " "
+				end
 
-			local counter = 0
-			for name in pairs( rpatches.List ) do
-				counter = counter + 1
-				str = str .. counter .. ". " .. name .. "\n"
+				str = string.format( "%s[%s] %s\n", str, state, name )
 			end
 
-			Msg( str )
+			MsgC( realmColor, str )
 		end,
 		["enable"] = function( args )
 			for _, name in ipairs( args ) do
@@ -121,7 +124,7 @@ do
 
 	actions.on, actions.off = actions.enable, actions.disable
 
-	concommand.Add( "rpatches", function( _, __, args )
+	concommand.Add( ( SERVER and "" or "cl_" ) .. "rpatches", function( _, __, args )
 		local func = actions[ args[ 1 ] ]
 		if not func then return end
 		table.remove( args, 1 )
@@ -130,7 +133,7 @@ do
 
 end
 
-MsgC( SERVER and Color( 50, 100, 250 ) or Color( 250, 100, 50 ), string.format( "[%s v%s] ", addonName, version ), color_white, "Game Patched!\n" )
+MsgC( realmColor, string.format( "[%s v%s] ", addonName, version ), color_white, "Game Patched!\n" )
 
 local NULL = NULL
 
@@ -392,102 +395,102 @@ if SERVER then
 	end, function()
 		hook.Remove( "EntityTakeDamage", "Catch Damage" )
 	end )
+
+	return
 end
 
-if CLIENT then
-	do
+do
 
-		local view = {
-			["type"] = "2D"
-		}
+	local view = {
+		["type"] = "2D"
+	}
 
-		function cam.Start2D()
-			cam.Start( view )
-		end
-
+	function cam.Start2D()
+		cam.Start( view )
 	end
 
-	do
-		local localPlayer = LocalPlayer
-		if iscfunction( localPlayer ) then
-			local entity
-			function _G.LocalPlayer()
-				entity = localPlayer()
+end
 
-				if IsValid( entity ) then
-					_G.LocalPlayer = function()
-						return entity
-					end
+do
+	local localPlayer = LocalPlayer
+	if iscfunction( localPlayer ) then
+		local entity
+		function _G.LocalPlayer()
+			entity = localPlayer()
+
+			if IsValid( entity ) then
+				_G.LocalPlayer = function()
+					return entity
 				end
-
-				return entity
 			end
+
+			return entity
 		end
 	end
-
-	rpatches.Register( "Focus Attack Fix", function()
-		local system_HasFocus = system.HasFocus
-		local lastNoFocusTime = 0
-		local CurTime = CurTime
-
-		hook.Add( "CreateMove", "Attack Limitter", function( cmd )
-			if CurTime() - lastNoFocusTime < 0.25 then
-				cmd:RemoveKey( IN_ATTACK )
-				cmd:RemoveKey( IN_ATTACK2 )
-			end
-
-			if system_HasFocus() then return end
-			lastNoFocusTime = CurTime()
-		end )
-	end, function()
-		hook.Remove( "CreateMove", "Attack Limitter" )
-	end )
-
-	rpatches.Register( "Bind Fix", function()
-		local binds = {}
-		hook.Add( "PlayerBindPress", "Down", function( _, bind, __, keyCode )
-			if not string.StartsWith( bind, "+" ) then return end
-			binds[ keyCode ] = string.sub( bind, 2, #bind )
-		end )
-
-		hook.Add( "PlayerButtonUp", "Up", function( ply, keyCode )
-			local bind = binds[ keyCode ]
-			if not bind then return end
-			binds[ keyCode ] = nil
-
-			hook.Run( "PlayerBindPress", ply, "-" .. bind, true, keyCode )
-		end )
-	end )
-
-	rpatches.Register( "Bind Fix", function()
-		local cl_pitchspeed, state = GetConVar( "cl_pitchspeed" ), 0
-		hook.Add( "PlayerBindPress", "Bind", function( _, bind, keyIsDown )
-			if not keyIsDown then return end
-
-			local keyPrase = string.sub( bind, 2, #bind )
-			if keyPrase == "lookup" then
-				state = string.sub( bind, 1, 1 ) == "+" and 1 or 0
-				return true
-			elseif keyPrase == "lookdown" then
-				state = string.sub( bind, 1, 1 ) == "+" and -1 or 0
-				return true
-			end
-		end )
-
-		hook.Add( "StartCommand", "Controll", function( _, cmd )
-			if state == 0 then return end
-			local angles = cmd:GetViewAngles()
-			angles[ 1 ] = angles[ 1 ] - ( cl_pitchspeed:GetFloat() * ( FrameTime() * state  ) / ( cmd:KeyDown( IN_SPEED ) and 2 or 1 ) )
-			cmd:SetViewAngles( angles )
-		end )
-	end, function()
-		hook.Remove( "StartCommand", "Controll" )
-		hook.Remove( "PlayerBindPress", "Bind" )
-	end )
-
-	net.Receive( "RemoveAllDecalsFix", function()
-		local entity = net.ReadEntity()
-		if not IsValid( entity ) then return end
-		entity:RemoveAllDecals()
-	end )
 end
+
+rpatches.Register( "Focus Attack Fix", function()
+	local system_HasFocus = system.HasFocus
+	local lastNoFocusTime = 0
+	local CurTime = CurTime
+
+	hook.Add( "CreateMove", "Attack Limitter", function( cmd )
+		if CurTime() - lastNoFocusTime < 0.25 then
+			cmd:RemoveKey( IN_ATTACK )
+			cmd:RemoveKey( IN_ATTACK2 )
+		end
+
+		if system_HasFocus() then return end
+		lastNoFocusTime = CurTime()
+	end )
+end, function()
+	hook.Remove( "CreateMove", "Attack Limitter" )
+end )
+
+rpatches.Register( "Bind Fix", function()
+	local binds = {}
+	hook.Add( "PlayerBindPress", "Down", function( _, bind, __, keyCode )
+		if not string.StartsWith( bind, "+" ) then return end
+		binds[ keyCode ] = string.sub( bind, 2, #bind )
+	end )
+
+	hook.Add( "PlayerButtonUp", "Up", function( ply, keyCode )
+		local bind = binds[ keyCode ]
+		if not bind then return end
+		binds[ keyCode ] = nil
+
+		hook.Run( "PlayerBindPress", ply, "-" .. bind, true, keyCode )
+	end )
+end )
+
+rpatches.Register( "Arrow Camera Control Fix", function()
+	local cl_pitchspeed, state = GetConVar( "cl_pitchspeed" ), 0
+	hook.Add( "PlayerBindPress", "Bind", function( _, bind, keyIsDown )
+		if not keyIsDown then return end
+
+		local keyPrase = string.sub( bind, 2, #bind )
+		if keyPrase == "lookup" then
+			state = string.sub( bind, 1, 1 ) == "+" and 1 or 0
+			return true
+		elseif keyPrase == "lookdown" then
+			state = string.sub( bind, 1, 1 ) == "+" and -1 or 0
+			return true
+		end
+	end )
+
+	hook.Add( "StartCommand", "Controll", function( _, cmd )
+		if state == 0 then return end
+		local angles = cmd:GetViewAngles()
+		angles[ 1 ] = angles[ 1 ] - ( cl_pitchspeed:GetFloat() * ( FrameTime() * state  ) / ( cmd:KeyDown( IN_SPEED ) and 2 or 1 ) )
+		cmd:SetViewAngles( angles )
+	end )
+end, function()
+	hook.Remove( "StartCommand", "Controll" )
+	hook.Remove( "PlayerBindPress", "Bind" )
+end )
+
+net.Receive( "RemoveAllDecalsFix", function()
+	local entity = net.ReadEntity()
+	if not IsValid( entity ) then return end
+	entity:RemoveAllDecals()
+end )
