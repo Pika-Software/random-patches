@@ -1,3 +1,4 @@
+local SERVER = SERVER
 local realmColor = SERVER and Color( 50, 100, 250 ) or Color( 250, 100, 50 )
 local addonName = "Random Patches"
 local version = "4.0.0"
@@ -124,7 +125,12 @@ do
 
 	actions.on, actions.off = actions.enable, actions.disable
 
-	concommand.Add( ( SERVER and "" or "cl_" ) .. "rpatches", function( _, __, args )
+	concommand.Add( ( SERVER and "" or "cl_" ) .. "rpatches", function( ply, __, args )
+		if SERVER and IsValid( ply ) and not ply:IsListenServerHost() then
+			ply:ChatPrint( "[RPatches] You do not have enough permissions to run this command." )
+			return
+		end
+
 		local func = actions[ args[ 1 ] ]
 		if not func then return end
 		table.remove( args, 1 )
