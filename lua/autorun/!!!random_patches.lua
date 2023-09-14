@@ -210,7 +210,7 @@ rpatches.Register( "Improved IsMounted", function()
 	cacheMounted()
 end )
 
-rpatches.Register( "Invisible Sound Fix", function()
+rpatches.Register( "Invisible Sound Source Fix", function()
 	hook.Add( "EntityEmitSound", "Catching", function( data )
 		local entity = data.Entity
 		if IsValid( entity ) and entity:GetNoDraw() then return true end
