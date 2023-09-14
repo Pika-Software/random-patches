@@ -1,7 +1,7 @@
 local SERVER = SERVER
 local realmColor = SERVER and Color( 50, 100, 250 ) or Color( 250, 100, 50 )
 local addonName = "Random Patches"
-local version = "4.0.0"
+local version = "4.1.0"
 
 if type( rpatches ) ~= "table" then
 	rpatches = {
@@ -208,6 +208,15 @@ rpatches.Register( "Improved IsMounted", function()
 
 	hook.Add( "GameContentChanged", "Content Changed", cacheMounted )
 	cacheMounted()
+end )
+
+rpatches.Register( "Invisible Sound Fix", function()
+	hook.Add( "EntityEmitSound", "Catching", function( data )
+		local entity = data.Entity
+		if IsValid( entity ) and entity:GetNoDraw() then return true end
+	end )
+end, function()
+	hook.Remove( "EntityEmitSound", "Catching" )
 end )
 
 local function iscfunction( func )
