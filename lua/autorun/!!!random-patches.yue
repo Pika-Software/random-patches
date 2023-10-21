@@ -1,22 +1,25 @@
 string_format = string.format
+isfunction = isfunction
+isstring = isstring
 SERVER = SERVER
-type = type
 
 NAME = "Random Patches"
-VERSION = "5.0.1"
+VERSION = "5.1.0"
 FULL_NAME = string_format( "%s v%s", NAME, VERSION )
 SIDE_COLOR = SERVER and Color( 50, 100, 250 ) or Color( 250, 100, 50 )
 LIST = {
     "Improvement for gLua": false
 }
 
-hook = hook
-hook_Add = hook.Add
-
+cvars_AddChangeCallback = cvars.AddChangeCallback
+hook_Add = nil
+hook_Run = nil
 Patch = nil
 do
 
-    cvars_AddChangeCallback = cvars.AddChangeCallback
+    hook = hook
+    hook_Add = hook.Add
+    hook_Run = hook.Run
     CreateConVar = CreateConVar
     setmetatable = setmetatable
     hook_Remove = hook.Remove
@@ -31,8 +34,8 @@ do
 
     class Patch
         new: ( name, enable, disable ) =>
-            assert( type( name ) == "string", "Argument #1 must be a string!" )
-            assert( type( enable ) == "function", "Argument #2 must be a function!" )
+            assert( isstring( name ), "Argument #1 must be a string!" )
+            assert( isfunction( enable ), "Argument #2 must be a function!" )
 
             enviroment = {}
 
@@ -44,19 +47,19 @@ do
                 } )
 
                 lib.Add = ( eventName, identifier, ... ) ->
-                    if type( identifier ) == "string"
+                    if isstring( identifier )
                         identifier = NAME .. "@" .. name .. "::" .. identifier
                     hook_Add( eventName, identifier, ... )
 
                 lib.Remove = ( eventName, identifier ) ->
-                    if type( identifier ) == "string"
+                    if isstring( identifier )
                         identifier = NAME .. "@" .. name .. "::" .. identifier
                     hook_Remove( eventName, identifier )
 
             setmetatable( enviroment, _GMETA )
 		    setfenv( enable, enviroment )
 
-            if type( disable ) ~= "function"
+            unless isfunction( disable )
                 LIST[ name ] = false
                 return enable!
 
@@ -93,7 +96,7 @@ do
         MsgC( SIDE_COLOR, output )
     )
 
-MsgC( SIDE_COLOR, "[" .. FULL_NAME .. "] ", color_white, table.Random( { "Here For You ♪", "Game Patched!", "OK", "Successfully initialized!", "Hello there", "Specially for you!", "UxU", "OwO", "Powered by Pika Software!", "Made with <3", "Yeah, well..." } ) .. "\n" )
+MsgC( SIDE_COLOR, "[" .. FULL_NAME .. "] ", color_white, table.Random( { "Here For You ♪", "Game Patched!", "OK", "Successfully initialized!", "Hello there", "Specially for you!", "Hello?", "Wow", "Powered by Pika Software!", "Made with <3", "Yeah, well" } ) .. "\n" )
 
 string.StartsWith = string.StartsWith or string.StartWith
 
@@ -122,7 +125,7 @@ do
         return tbl[ rand ], rand
 
 iscfunction = ( value ) ->
-	if type( value ) ~= "function"
+	unless isfunction( value )
         return false
 	return debug.getinfo( value ).short_src == "[C]"
 
@@ -140,6 +143,7 @@ Patch( "Invisible Sounds", ->
     hook.Remove( "EntityEmitSound", "Catching" )
 )
 
+RunConsoleCommand = RunConsoleCommand
 GetConVar = GetConVar
 
 if SERVER
@@ -165,7 +169,7 @@ if SERVER
 		util.AddNetworkString( patchName )
 
 		CRemoveAllDecals = ENTITY.CRemoveAllDecals
-		if type( CRemoveAllDecals ) ~= "function"
+		unless isfunction( CRemoveAllDecals )
             CRemoveAllDecals = ENTITY.RemoveAllDecals
             ENTITY.CRemoveAllDecals = CRemoveAllDecals
 
@@ -240,7 +244,7 @@ if SERVER
         ENTITY_Fire = ENTITY.Fire
 
 		enable = ->
-			hook.Add( "EntityRemoved", "Entity Catch", ( entity ) ->
+			hook.Add( "EntityRemoved", "Entity Catching", ( entity ) ->
 				unless doorClasses[ ENTITY_GetClass( entity ) ]
                     return
 
@@ -256,14 +260,14 @@ if SERVER
 			)
 
 		disable = ->
-			hook.Remove( "EntityRemoved", "Entity Catch" )
+			hook.Remove( "EntityRemoved", "Entity Catching" )
 
 		hook.Add( "PreCleanupMap", "Disable", disable )
 		hook.Add( "PostCleanupMap", "Enable", enable )
 		hook.Add( "ShutDown", "Disable", disable )
 		enable!
     ->
-		hook.Remove( "EntityRemoved", "Entity Catch" )
+		hook.Remove( "EntityRemoved", "Entity Catching" )
 		hook.Remove( "PreCleanupMap", "Disable" )
 		hook.Remove( "PostCleanupMap", "Enable" )
 	)
@@ -346,36 +350,36 @@ if SERVER
 	-- Explosive damage only works if is located in front of prop_vehicle_prisoner_pod (wtf?)
 	Patch( "prop_vehicle_prisoner_pod Explosive Damage", ->
 		ENTITY_TakePhysicsDamage = ENTITY.TakePhysicsDamage
-        hook.Add( "EntityTakeDamage", "Catch Damage", ( entity, damageInfo ) ->
+        hook.Add( "EntityTakeDamage", "Damage Catching", ( entity, damageInfo ) ->
             if ENTITY_GetClass( entity ) ~= "prop_vehicle_prisoner_pod" or entity.AcceptDamageForce
                 return
 			ENTITY_TakePhysicsDamage( entity, damageInfo )
 		)
 	->
-		hook.Remove( "EntityTakeDamage", "Catch Damage" )
+		hook.Remove( "EntityTakeDamage", "Damage Catching" )
 	)
 
-else
+    return
 
-    do
-        cam_Start = cam.Start
-        view = { type: "2D" }
-        cam.Start2D = ->
-            cam_Start( view )
+do
+    cam_Start = cam.Start
+    view = { type: "2D" }
+    cam.Start2D = ->
+        cam_Start( view )
 
-    do
-        local func = LocalPlayer
-        if iscfunction( func )
-            global CLocalPlayer = func
-            entity = nil
+do
+    local func = LocalPlayer
+    if iscfunction( func )
+        global CLocalPlayer = func
+        entity = nil
 
-            global LocalPlayer = ->
-                entity = func!
+        global LocalPlayer = ->
+            entity = func!
 
-                if entity and ENTITY_IsValid( entity )
-                    global LocalPlayer = ->
-                        return entity
-                return entity
+            if entity and ENTITY_IsValid( entity )
+                global LocalPlayer = ->
+                    return entity
+            return entity
 
 Patch( "FPS Limiter", ->
     cl_fps_limit = CreateClientConVar( "cl_fps_limit", "60", true, true, "Unique per player frames-per-second limit.", 30, 360 )
@@ -395,9 +399,21 @@ Patch( "FPS Limiter", ->
     RunConsoleCommand( "fps_max", GetConVar( "fps_max" )\GetDefault! )
 )
 
+do
+
+    system_HasFocus = system.HasFocus
+
+    do
+        lastFocusState = system_HasFocus!
+        hook_Add( "Think", "OnScreenFocusChanged", ->
+            currentFocusState = system_HasFocus!
+            if lastFocusState ~= currentFocusState
+                lastFocusState = currentFocusState
+                hook_Run( "OnScreenFocusChanged", currentFocusState )
+        )
+
     Patch( "Focus Attack Fix", ->
         IN_ATTACK, IN_ATTACK2 = IN_ATTACK, IN_ATTACK2
-        system_HasFocus = system.HasFocus
         lastNoFocusTime = 0
         CurTime = CurTime
 
@@ -445,66 +461,65 @@ Patch( "FPS Limiter", ->
         hook.Remove( "OnScreenFocusChanged", "Catching" )
     )
 
-    string_sub = string.sub
+string_sub = string.sub
 
-    Patch( "Bind Fix", ->
-        string_StartsWith = string.StartsWith
-        hook_Run = hook.Run
-        binds = {}
+Patch( "Bind Fix", ->
+    string_StartsWith = string.StartsWith
+    binds = {}
 
-        hook.Add( "PlayerBindPress", "Down", ( _, bind, __, keyCode ) ->
-            unless string_StartsWith( bind, "+" )
-                return
-            binds[ keyCode ] = string_sub( bind, 2, #bind )
-        )
-
-        hook.Add( "PlayerButtonUp", "Up", ( ply, keyCode ) ->
-            local bind = binds[ keyCode ]
-            unless bind
-                return
-            binds[ keyCode ] = nil
-            hook_Run( "PlayerBindPress", ply, "-" .. bind, true, keyCode )
-        )
+    hook.Add( "PlayerBindPress", "Down", ( _, bind, __, keyCode ) ->
+        unless string_StartsWith( bind, "+" )
+            return
+        binds[ keyCode ] = string_sub( bind, 2, #bind )
     )
 
-    Patch( "Arrow Camera Control Fix", ->
-        state = 0
+    hook.Add( "PlayerButtonUp", "Up", ( ply, keyCode ) ->
+        local bind = binds[ keyCode ]
+        unless bind
+            return
+        binds[ keyCode ] = nil
+        hook_Run( "PlayerBindPress", ply, "-" .. bind, true, keyCode )
+    )
+)
 
-        hook.Add( "PlayerBindPress", "Bind", ( _, bind, isDown ) ->
-            unless isDown
-                return
+Patch( "Arrow Camera Control Fix", ->
+    state = 0
 
-            keyPrase = string_sub( bind, 2, #bind )
-            if keyPrase == "lookup"
-                state = string_sub( bind, 1, 1 ) == "+" and 1 or 0
-                return true
-            elseif keyPrase == "lookdown"
-                state = string_sub( bind, 1, 1 ) == "+" and -1 or 0
-                return true
-        )
+    hook.Add( "PlayerBindPress", "Bind", ( _, bind, isDown ) ->
+        unless isDown
+            return
 
-        cl_pitchspeed = GetConVar( "cl_pitchspeed" )
-        FrameTime = FrameTime
-        IN_SPEED = IN_SPEED
-
-        hook.Add( "StartCommand", "Controll", ( _, cmd ) ->
-            if state == 0
-                return
-            angles = cmd\GetViewAngles()
-            angles[ 1 ] = angles[ 1 ] - ( cl_pitchspeed\GetFloat! * ( FrameTime! * state  ) / ( cmd\KeyDown( IN_SPEED ) and 4 or 2 ) )
-            cmd\SetViewAngles( angles )
-        )
-    ->
-        hook.Remove( "StartCommand", "Controll" )
-        hook.Remove( "PlayerBindPress", "Bind" )
+        keyPrase = string_sub( bind, 2, #bind )
+        if keyPrase == "lookup"
+            state = string_sub( bind, 1, 1 ) == "+" and 1 or 0
+            return true
+        elseif keyPrase == "lookdown"
+            state = string_sub( bind, 1, 1 ) == "+" and -1 or 0
+            return true
     )
 
-    do
-        ENTITY_RemoveAllDecals = ENTITY.RemoveAllDecals
-        net_ReadEntity = net.ReadEntity
-        net.Receive( "RemoveAllDecalsFix", ->
-            entity = net_ReadEntity()
-            unless ENTITY_IsValid( entity )
-                return
-            ENTITY_RemoveAllDecals( entity )
-        )
+    cl_pitchspeed = GetConVar( "cl_pitchspeed" )
+    FrameTime = FrameTime
+    IN_SPEED = IN_SPEED
+
+    hook.Add( "StartCommand", "Controll", ( _, cmd ) ->
+        if state == 0
+            return
+        angles = cmd\GetViewAngles()
+        angles[ 1 ] = angles[ 1 ] - ( cl_pitchspeed\GetFloat! * ( FrameTime! * state  ) / ( cmd\KeyDown( IN_SPEED ) and 4 or 2 ) )
+        cmd\SetViewAngles( angles )
+    )
+->
+    hook.Remove( "StartCommand", "Controll" )
+    hook.Remove( "PlayerBindPress", "Bind" )
+)
+
+do
+    ENTITY_RemoveAllDecals = ENTITY.RemoveAllDecals
+    net_ReadEntity = net.ReadEntity
+    net.Receive( "RemoveAllDecalsFix", ->
+        entity = net_ReadEntity()
+        unless ENTITY_IsValid( entity )
+            return
+        ENTITY_RemoveAllDecals( entity )
+    )
