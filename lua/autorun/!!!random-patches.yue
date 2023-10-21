@@ -395,6 +395,19 @@ else
         hook.Remove( "CreateMove", "Attack Limitter" )
     )
 
+    Patch( "Render Disabler", ->
+        hook.Add( "OnScreenFocusChanged", "Catching", ( focusState ) ->
+            if focusState
+                hook.Remove( "RenderScene", "Disabling" )
+            else
+                hook.Add( "RenderScene", "Disabling", ->
+                    return true
+                )
+        )
+    ->
+        hook.Remove( "OnScreenFocusChanged", "Catching" )
+        hook.Remove( "RenderScene", "Disabling" )
+    )
     string_sub = string.sub
 
     Patch( "Bind Fix", ->
