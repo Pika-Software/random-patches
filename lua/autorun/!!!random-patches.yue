@@ -408,6 +408,25 @@ else
         hook.Remove( "OnScreenFocusChanged", "Catching" )
         hook.Remove( "RenderScene", "Disabling" )
     )
+
+    Patch( "False Screen Capture Fix", ->
+        lastState = nil
+
+        hook.Add( "OnScreenFocusChanged", "Catching", ( focusState ) ->
+            if focusState
+                if lastState ~= nil
+                    if lastState
+                        gui.HideGameUI!
+                    lastState = nil
+            elseif lastState == nil
+                lastState = not gui.IsGameUIVisible!
+                if lastState
+                    gui.ActivateGameUI!
+        )
+    ->
+        hook.Remove( "OnScreenFocusChanged", "Catching" )
+    )
+
     string_sub = string.sub
 
     Patch( "Bind Fix", ->
