@@ -377,6 +377,24 @@ else
                         return entity
                 return entity
 
+Patch( "FPS Limiter", ->
+    cl_fps_limit = CreateClientConVar( "cl_fps_limit", "60", true, true, "Unique per player frames-per-second limit.", 30, 360 )
+
+    syncLimit = ->
+        RunConsoleCommand( "fps_max", cl_fps_limit\GetInt! )
+    cvars_AddChangeCallback( "fps_max", syncLimit, FULL_NAME )
+    syncLimit!
+
+    cvars_AddChangeCallback( "cl_fps_limit"
+        ( _, __, value ) ->
+            RunConsoleCommand( "fps_max", value )
+    FULL_NAME )
+->
+    cvars.RemoveChangeCallback( "fps_max", FULL_NAME )
+    cvars.RemoveChangeCallback( "cl_fps_limit", FULL_NAME )
+    RunConsoleCommand( "fps_max", GetConVar( "fps_max" )\GetDefault! )
+)
+
     Patch( "Focus Attack Fix", ->
         IN_ATTACK, IN_ATTACK2 = IN_ATTACK, IN_ATTACK2
         system_HasFocus = system.HasFocus
