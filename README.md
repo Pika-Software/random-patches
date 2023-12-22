@@ -1,4 +1,4 @@
-# Garry's Mod Random Patches
+# Random Patches
 A collection of in-game fixes that don't affect gameplay much, but make the game faster, more stable, and more enjoyable.
 
 ## Where is Lua code?
