@@ -1,84 +1,61 @@
 string_format = string.format
 isfunction = isfunction
 isstring = isstring
+IsValid = IsValid
 SERVER = SERVER
 pairs = pairs
 
-NAME = "Random Patches"
-VERSION = "5.3.1"
-FULL_NAME = string_format( "%s v%s", NAME, VERSION )
-SIDE_COLOR = SERVER and Color( 50, 100, 250 ) or Color( 250, 100, 50 )
-LIST = {
-    "Improvement for gLua": false
-}
-
-cvars_AddChangeCallback = cvars.AddChangeCallback
-IsValid = IsValid
-hook_Add = nil
-hook_Run = nil
-Patch = nil
+hook_Add, hook_Remove, hook_Run = nil, nil, nil
 do
 
     hook = hook
     hook_Add = hook.Add
-    hook_Run = hook.Run
-    CreateConVar = CreateConVar
-    setmetatable = setmetatable
     hook_Remove = hook.Remove
-    setfenv = setfenv
+    hook_Run = hook.Run
+
+NAME = "Random Patches"
+VERSION = "5.4.0"
+FULL_NAME = string_format( "%s v%s", NAME, VERSION )
+COLOR = SERVER and Color( 50, 100, 250 ) or Color( 250, 100, 50 )
+
+LIST = {
+    "Improvement for gLua": false
+}
+
+Patch = nil
+do
+
+    FCVAR_FLAGS = bit.bor( FCVAR_ARCHIVE, FCVAR_REPLICATED, FCVAR_NOTIFY, FCVAR_DONTRECORD )
+    FCVAR_ARCHIVE = FCVAR_ARCHIVE
+    :AddChangeCallback = cvars
+    CreateConVar = CreateConVar
+    :gsub, :lower = string
     assert = assert
 
-	FCVAR_FLAGS = bit.bor( FCVAR_ARCHIVE, FCVAR_REPLICATED )
-    _GMETA = {
-        __newindex: _G
-        __index: _G
-    }
-
     class Patch
-        new: ( name, enable, disable ) =>
+        new: ( name, enable, disable, shared ) =>
             assert( isstring( name ), "Argument #1 must be a string!" )
             assert( isfunction( enable ), "Argument #2 must be a function!" )
-
-            enviroment = {}
-
-            do
-
-                lib = {}
-                enviroment.hook = setmetatable( lib, {
-                    __index: hook
-                } )
-
-                lib.Add = ( eventName, identifier, ... ) ->
-                    if isstring( identifier )
-                        identifier = NAME .. "@" .. name .. "::" .. identifier
-                    hook_Add( eventName, identifier, ... )
-
-                lib.Remove = ( eventName, identifier ) ->
-                    if isstring( identifier )
-                        identifier = NAME .. "@" .. name .. "::" .. identifier
-                    hook_Remove( eventName, identifier )
-
-            setmetatable( enviroment, _GMETA )
-		    setfenv( enable, enviroment )
 
             unless isfunction( disable )
                 LIST[ name ] = false
                 return enable!
 
-		    setfenv( disable, enviroment )
-
-            conVarName = ( SERVER and "s" or "c" ) .. "patch_" .. string.gsub( string.lower( name ), "[%s%p]", "_" )
+            conVarName = ( SERVER and "s" or "c" ) .. "patch_" .. gsub( lower( name ), "[%s%p]", "_" )
             LIST[ name ] = conVarName
 
-            if CreateConVar( conVarName, "1", FCVAR_FLAGS, name, 0, 1 )\GetBool!
+            if CreateConVar( conVarName, "1", shared and FCVAR_FLAGS or FCVAR_ARCHIVE, name, 0, 1 )\GetBool!
                 enable!
 
-            cvars_AddChangeCallback( conVarName, ( _, __, value ) ->
+            AddChangeCallback conVarName, ( _, __, value ) ->
                 if value == "1"
                     enable!
-                else
-                    disable!
-            )
+                    return
+
+                disable!
+
+GetHookName = ( patchName, hookName ) ->
+    return FULL_NAME .. "::" .. patchName .. ( hookName or "" )
 
 do
 
@@ -94,9 +71,9 @@ do
         for name, value in pairs( LIST )
             output ..= string_format( " - [%s] %s\n", ( not value or cvars_Bool( value ) ) and "*" or " ", name )
 
-        MsgC( SIDE_COLOR, output )
+        MsgC( COLOR, output )
 
-MsgC( SIDE_COLOR, "[" .. FULL_NAME .. "] ", color_white, table.Random( { "Here For You ♪", "Game Patched!", "OK", "Successfully initialized!", "Hello there", "Specially for you!", "Hello?", "Wow", "Powered by Pika Software!", "Made with <3", "Yeah, well", "Init!", "Im here :" } ) .. "\n" )
+MsgC( COLOR, "[" .. FULL_NAME .. "] ", color_white, table.Random( { "Here For You ♪", "Game Patched!", "OK", "Successfully initialized!", "Hello there", "Specially for you!", "Hello?", "Wow", "Powered by Pika Software!", "Made with <3", "Yeah, well", "Init!", "Im here :" } ) .. "\n" )
 
 string.StartsWith = string.StartsWith or string.StartWith
 
@@ -135,62 +112,60 @@ iscfunction = ( value ) ->
 ENTITY = FindMetaTable( "Entity" )
 ENTITY_IsValid = ENTITY.IsValid
 
-Patch( "Player Shoot Position Fix" , ->
-    hook.Add "SetupMove", "Capture Source", =>
-        if @IsBot! or not @Alive!
-            return
+do
 
-        @m_RealShootPos = @GetShootPos!
+    hookName = GetHookName( "Player Shoot Position Fix" )
 
-    hook.Add "EntityFireBullets", "Replace Source", ( data ) =>
-        if not @IsPlayer! or @IsBot! or not @Alive!
-            return
+    Patch( "Player Shoot Position Fix" , ->
+        hook_Add "SetupMove", hookName, =>
+            if @IsBot! or not @Alive!
+                return
 
-        src = @GetShootPos!
-        if data.Src == src
-			data.Src = @m_RealShootPos or src
-			return true
-->
-    hook.Remove "EntityFireBullets", "Replace Source"
-    hook.Remove "SetupMove", "Capture Source"
-)
+            @m_RealShootPos = @GetShootPos!
 
-Patch( "Invisible Sounds Fix", ->
-    ENTITY_GetNoDraw = ENTITY.GetNoDraw
+        hook_Add "EntityFireBullets", hookName, ( data ) =>
+            if not @IsPlayer! or @IsBot! or not @Alive!
+                return
 
-	hook.Add "EntityEmitSound", "Catching", ( data ) ->
-		entity = data.Entity
-        if entity and ENTITY_IsValid( entity ) and ENTITY_GetNoDraw( entity )
-            return true
+            src = @GetShootPos!
+            if data.Src == src
+                data.Src = @m_RealShootPos or src
+                return true
+    ->
+        hook_Remove "EntityFireBullets", hookName
+        hook_Remove "SetupMove", hookName
+    true )
 
-->
-    hook.Remove "EntityEmitSound", "Catching"
-)
+do
 
-Patch( "Blood After Death Fix", ->
-    gameevent.Listen( "player_hurt" )
-    timer_Simple = timer.Simple
+    hookName = GetHookName( "Blood After Death Fix" )
 
-    hook.Add "player_hurt", "Player Hurt", ( data ) ->
-        health = data.health
-        if health > 0
-            return
+    Patch( "Blood After Death Fix", ->
+        gameevent.Listen( "player_hurt" )
+        timer_Simple = timer.Simple
+        Player = Player
 
-        ply = Player( data.userid )
-        unless ply\IsValid! and ply\Alive!
-            return
+        hook_Add "player_hurt", hookName, ( data ) ->
+            health = data.health
+            if health > 0
+                return
 
-        timer_Simple 0.25, ->
-            if ply\IsValid!
-                ply\RemoveAllDecals!
-->
-    hook.Remove "player_hurt", "Player Hurt"
-)
+            ply = Player( data.userid )
+            unless ply\IsValid! and ply\Alive!
+                return
+
+            timer_Simple 0.25, ->
+                if ply\IsValid!
+                    ply\RemoveAllDecals!
+    ->
+        hook_Remove "player_hurt", hookName
+    true )
 
 RunConsoleCommand = RunConsoleCommand
 GetConVar = GetConVar
 
 if SERVER
+
 	CreateConVar( "room_type", "0" )
 	scripted_ents.Register( {
 		Base: "base_point"
@@ -208,179 +183,208 @@ if SERVER
     HOOK_MONITOR_HIGH = HOOK_MONITOR_HIGH
 	PLAYER = FindMetaTable( "Player" )
 
-	Patch( "Steam Auth Protection", ->
-		sv_lan = GetConVar( "sv_lan" )
-        PLAYER_Kick = PLAYER.Kick
+    do
 
-		hook.Add( "PlayerInitialSpawn", "Player Spawn", =>
-			if sv_lan\GetBool!
-                return
+        hookName = GetHookName( "Steam Auth Protection" )
 
-            if @IsBot! or @IsListenServerHost! or @IsFullyAuthenticated!
-                return
+        Patch( "Steam Auth Protection", ->
+            sv_lan = GetConVar( "sv_lan" )
+            PLAYER_Kick = PLAYER.Kick
 
-			PLAYER_Kick( @, "Your SteamID wasn\'t fully authenticated, try restart your Steam client." )
-		HOOK_MONITOR_HIGH )
+            hook_Add( "PlayerInitialSpawn", hookName, =>
+                if sv_lan\GetBool!
+                    return
 
-	->
-		hook.Remove "PlayerInitialSpawn", "Player Spawn"
-	)
+                if @IsBot! or @IsListenServerHost! or @IsFullyAuthenticated!
+                    return
+
+                PLAYER_Kick( @, "Your SteamID wasn\'t fully authenticated, try restart your Steam client." )
+            HOOK_MONITOR_HIGH )
+
+        ->
+            hook_Remove "PlayerInitialSpawn", hookName
+        )
 
 	-- Fix for https://github.com/Facepunch/garrysmod-issues/issues/2447
 	-- https://github.com/SuperiorServers/dash/blob/master/lua/dash/extensions/player.lua#L44-L57
-	Patch( "Player SetPos", ->
-        ENTITY_SetPos = ENTITY.SetPos
-		positions = {}
+	do
 
-		PLAYER.SetPos = ( pos ) =>
-			positions[ @ ] = pos
+        hookName = GetHookName( "Player SetPos" )
 
-        hook.Add "PlayerDisconnected", "Disconnect", =>
-            positions[ @ ] = nil
+        Patch( "Player SetPos", ->
+            ENTITY_SetPos = ENTITY.SetPos
+            positions = {}
 
-		hook.Add "FinishMove", "SetPos", =>
-			pos = positions[ @ ]
-            unless pos
-                return
+            PLAYER.SetPos = ( pos ) =>
+                positions[ @ ] = pos
 
-			ENTITY_SetPos( @, pos )
-			positions[ @ ] = nil
-			return true
+            hook_Add "PlayerDisconnected", hookName, =>
+                positions[ @ ] = nil
 
-	)
+            hook_Add "FinishMove", hookName, =>
+                pos = positions[ @ ]
+                unless pos
+                    return
+
+                ENTITY_SetPos( @, pos )
+                positions[ @ ] = nil
+                return true
+
+        )
 
     ENTITY_GetInternalVariable = ENTITY.GetInternalVariable
     ENTITY_GetClass = ENTITY.GetClass
 
-	Patch( "Smart Area Portals", ->
-		ents_FindByClass = ents.FindByClass
-		doorClasses = {
-			func_door_rotating: true
-			prop_door_rotating: true
-			func_movelinear: true
-			func_door: true
-		}
+    do
 
-        ENTITY_SetSaveValue = ENTITY.SetSaveValue
-        ENTITY_GetName = ENTITY.GetName
-        ENTITY_Fire = ENTITY.Fire
+        hookName = GetHookName( "Smart Area Portals" )
 
-		enable = ->
-			hook.Add( "EntityRemoved", "Entity Catching", ( entity ) ->
-				unless doorClasses[ ENTITY_GetClass( entity ) ]
+        Patch( "Smart Area Portals", ->
+            ents_FindByClass = ents.FindByClass
+            doorClasses = {
+                func_door_rotating: true
+                prop_door_rotating: true
+                func_movelinear: true
+                func_door: true
+            }
+
+            ENTITY_SetSaveValue = ENTITY.SetSaveValue
+            ENTITY_GetName = ENTITY.GetName
+            ENTITY_Fire = ENTITY.Fire
+
+            enable = ->
+                hook_Add( "EntityRemoved", hookName, ( entity ) ->
+                    unless doorClasses[ ENTITY_GetClass( entity ) ]
+                        return
+
+                    name = ENTITY_GetName( entity )
+                    if #name == 0 then
+                        return
+
+                    for portal in *ents_FindByClass( "func_areaportal" )
+                        if ENTITY_GetInternalVariable( portal, "target" ) ~= name
+                            continue
+                        ENTITY_SetSaveValue( portal, "target", "" )
+                        ENTITY_Fire( portal, "open" )
+                )
+
+            disable = ->
+                hook_Remove "EntityRemoved", hookName
+
+            hook_Add "PreCleanupMap", hookName, disable
+            hook_Add "PostCleanupMap", hookName, enable
+            hook_Add "ShutDown", hookName, disable
+            enable!
+        ->
+            hook_Remove "ShutDown", hookName
+            hook_Remove "EntityRemoved", hookName
+            hook_Remove "PreCleanupMap", hookName
+            hook_Remove "PostCleanupMap", hookName
+        )
+
+    do
+
+        hookName = GetHookName( "HL2 Chargers Physics" )
+
+        Patch "HL2 Chargers Physics", ->
+            SOLID_VPHYSICS = SOLID_VPHYSICS
+
+            hook_Add( "PlayerSpawnedSENT", hookName, ( _, entity ) ->
+                className = ENTITY_GetClass( entity )
+                if className ~= "item_suitcharger" and className ~= "item_healthcharger"
                     return
 
-				name = ENTITY_GetName( entity )
-				if #name == 0 then
-                    return
+                entity\PhysicsInit( SOLID_VPHYSICS )
+                entity\PhysWake!
 
-				for portal in *ents_FindByClass( "func_areaportal" )
-					if ENTITY_GetInternalVariable( portal, "target" ) ~= name
-                        continue
-					ENTITY_SetSaveValue( portal, "target", "" )
-					ENTITY_Fire( portal, "open" )
-			)
-
-		disable = ->
-			hook.Remove( "EntityRemoved", "Entity Catching" )
-
-		hook.Add( "PreCleanupMap", "Disable", disable )
-		hook.Add( "PostCleanupMap", "Enable", enable )
-		hook.Add( "ShutDown", "Disable", disable )
-		enable!
-    ->
-		hook.Remove "EntityRemoved", "Entity Catching"
-		hook.Remove "PreCleanupMap", "Disable"
-		hook.Remove "PostCleanupMap", "Enable"
-	)
-
-	Patch "HL2 Chargers Physics", ->
-		SOLID_VPHYSICS = SOLID_VPHYSICS
-
-		hook.Add( "PlayerSpawnedSENT", "Creation", ( _, entity ) ->
-            className = ENTITY_GetClass( entity )
-            if className ~= "item_suitcharger" and className ~= "item_healthcharger"
-                return
-
-            entity\PhysicsInit( SOLID_VPHYSICS )
-            entity\PhysWake!
-
-	->
-		hook.Remove "PlayerSpawnedSENT", "Creation"
-	)
+        ->
+            hook_Remove "PlayerSpawnedSENT", hookName
+        )
 
 	-- Little optimization idea by Billy (used in voicebox)
 	-- "for something that really shouldn't be O(n)"
 	-- https://i.imgur.com/yPtoNvO.png
 	-- https://i.imgur.com/a0lmB9m.png
-	Patch( "UserID Cache", ->
-        unless iscfunction( PLAYER.UserID )
-            return
+    do
 
-		CUserID = PLAYER.CUserID
-		unless CUserID
-			CUserID = PLAYER.UserID
-            PLAYER.CUserID = CUserID
+        hookName = GetHookName( "UserID Cache" )
 
-		PLAYER.UserID = =>
-			return @__UserID or CUserID( @ )
+        Patch( "UserID Cache", ->
+            unless iscfunction( PLAYER.UserID )
+                return
 
-		cacheUserID = =>
-			@__UserID = CUserID( @ )
+            CUserID = PLAYER.CUserID
+            unless CUserID
+                CUserID = PLAYER.UserID
+                PLAYER.CUserID = CUserID
 
-		hook.Add "PlayerInitialSpawn", "Cache", cacheUserID, HOOK_MONITOR_HIGH
-		hook.Add "PlayerAuthed", "Cache", cacheUserID, HOOK_MONITOR_HIGH
-	)
+            PLAYER.UserID = =>
+                return @__UserID or CUserID( @ )
+
+            cacheUserID = =>
+                @__UserID = CUserID( @ )
+
+            hook_Add "PlayerInitialSpawn", hookName, cacheUserID, HOOK_MONITOR_HIGH
+            hook_Add "PlayerAuthed", hookName, cacheUserID, HOOK_MONITOR_HIGH
+        )
 
 	-- Pod network fix by Kefta (code_gs#4197)
 	-- Literally garrysmod-issues #2452
-	Patch( "Pod Performance", ->
-		EFL_NO_THINK_FUNCTION = EFL_NO_THINK_FUNCTION
+    do
 
-		hook.Add "OnEntityCreated", "Created", ( vehicle ) ->
-			if ENTITY_GetClass( vehicle ) ~= "prop_vehicle_prisoner_pod"
-                return
+        hookName = GetHookName( "Pod Performance" )
 
-            vehicle\AddEFlags( EFL_NO_THINK_FUNCTION )
+        Patch( "Pod Performance", ->
+            EFL_NO_THINK_FUNCTION = EFL_NO_THINK_FUNCTION
 
-		hook.Add "PlayerLeaveVehicle", "Leave", ( _, vehicle ) ->
-			if ENTITY_GetClass( vehicle ) ~= "prop_vehicle_prisoner_pod"
-                return
-
-            hook.Add "Think", vehicle, ( entity ) ->
-				hook.Remove "Think", entity
-
-				if ENTITY_GetInternalVariable( entity, "m_bEnterAnimOn" ) or ENTITY_GetInternalVariable( entity, "m_bExitAnimOn" )
+            hook_Add "OnEntityCreated", hookName, ( vehicle ) ->
+                if ENTITY_GetClass( vehicle ) ~= "prop_vehicle_prisoner_pod"
                     return
 
-                entity\AddEFlags( EFL_NO_THINK_FUNCTION )
+                vehicle\AddEFlags( EFL_NO_THINK_FUNCTION )
 
-        hook.Add "PlayerEnteredVehicle", "Enter", ( _, vehicle ) ->
-            if ENTITY_GetClass( vehicle ) ~= "prop_vehicle_prisoner_pod"
-                return
+            hook_Add "PlayerLeaveVehicle", hookName, ( _, vehicle ) ->
+                if ENTITY_GetClass( vehicle ) ~= "prop_vehicle_prisoner_pod"
+                    return
 
-            vehicle\RemoveEFlags( EFL_NO_THINK_FUNCTION )
+                hook_Add "Think", vehicle, ( entity ) ->
+                    hook_Remove "Think", entity
 
-	->
-		hook.Remove "OnEntityCreated", "Created"
-		hook.Remove "PlayerLeaveVehicle", "Leave"
-		hook.Remove "PlayerEnteredVehicle", "Enter"
-	)
+                    if ENTITY_GetInternalVariable( entity, "m_bEnterAnimOn" ) or ENTITY_GetInternalVariable( entity, "m_bExitAnimOn" )
+                        return
+
+                    entity\AddEFlags( EFL_NO_THINK_FUNCTION )
+
+            hook_Add "PlayerEnteredVehicle", hookName, ( _, vehicle ) ->
+                if ENTITY_GetClass( vehicle ) ~= "prop_vehicle_prisoner_pod"
+                    return
+
+                vehicle\RemoveEFlags( EFL_NO_THINK_FUNCTION )
+
+        ->
+            hook_Remove "OnEntityCreated", hookName
+            hook_Remove "PlayerLeaveVehicle", hookName
+            hook_Remove "PlayerEnteredVehicle", hookName
+        )
 
 	-- Fixes for prop_vehicle_prisoner_pod, worldspawn (and other not Valid but not NULL entities) damage taking (bullets only)
 	-- Explosive damage only works if is located in front of prop_vehicle_prisoner_pod (wtf?)
-	Patch( "prop_vehicle_prisoner_pod Explosive Damage", ->
-		ENTITY_TakePhysicsDamage = ENTITY.TakePhysicsDamage
+    do
 
-        hook.Add "EntityTakeDamage", "Damage Catching", ( entity, damageInfo ) ->
-            if ENTITY_GetClass( entity ) ~= "prop_vehicle_prisoner_pod" or entity.AcceptDamageForce
-                return
+        hookName = GetHookName( "prop_vehicle_prisoner_pod Explosive Damage" )
 
-			ENTITY_TakePhysicsDamage( entity, damageInfo )
+        Patch( "prop_vehicle_prisoner_pod Explosive Damage", ->
+            ENTITY_TakePhysicsDamage = ENTITY.TakePhysicsDamage
 
-	->
-		hook.Remove "EntityTakeDamage", "Damage Catching"
-	)
+            hook_Add "EntityTakeDamage", hookName, ( entity, damageInfo ) ->
+                if ENTITY_GetClass( entity ) ~= "prop_vehicle_prisoner_pod" or entity.AcceptDamageForce
+                    return
+
+                ENTITY_TakePhysicsDamage( entity, damageInfo )
+
+        ->
+            hook_Remove "EntityTakeDamage", hookName
+        )
 
     return
 
@@ -413,121 +417,141 @@ do
 
     do
 
-        lastFocusState = system_HasFocus!
+        lastFocusState = nil
 
-        hook_Add "Think", "OnScreenFocusChanged", ->
-            currentFocusState = system_HasFocus!
-            if lastFocusState ~= currentFocusState
-                lastFocusState = currentFocusState
-                hook_Run "OnScreenFocusChanged", currentFocusState
+        hook_Add "Think", GetHookName( "OnScreenFocusChanged" ), ->
+            focus = system_HasFocus!
+            if lastFocusState ~= focus
+                lastFocusState = focus
+                hook_Run "OnScreenFocusChanged", focus
 
-    Patch( "Focus Attack Fix", ->
-        IN_ATTACK, IN_ATTACK2 = IN_ATTACK, IN_ATTACK2
-        lastNoFocusTime = 0
-        CurTime = CurTime
+        do
 
-        hook.Add "CreateMove", "Attack Limitter", ( cmd ) ->
-            if ( CurTime! - lastNoFocusTime ) < 0.25
-                cmd\RemoveKey( IN_ATTACK )
-                cmd\RemoveKey( IN_ATTACK2 )
+            hookName = GetHookName( "Render Disabler" )
 
-            if system_HasFocus!
-                return
+            Patch( "Render Disabler", ->
+                hook_Add "RenderScene", hookName, ->
+                    if lastFocusState
+                        return
 
-            lastNoFocusTime = CurTime!
-
-    ->
-        hook.Remove "CreateMove", "Attack Limitter"
-    )
-
-    Patch( "Render Disabler", ->
-        hook.Add "OnScreenFocusChanged", "Render Capture", ( focusState ) ->
-            if focusState
-                hook.Remove "RenderScene", "Render Disabling"
-            else
-                hook.Add "RenderScene", "Render Disabling", ->
                     return true
-    ->
-        hook.Remove "OnScreenFocusChanged", "Render Capture"
-        hook.Remove "RenderScene", "Render Disabling"
-    )
+            ->
+                hook_Remove "RenderScene", hookName
+            )
+
+    do
+
+        hookName = GetHookName( "Focus Attack Fix" )
+
+        Patch( "Focus Attack Fix", ->
+            IN_ATTACK, IN_ATTACK2 = IN_ATTACK, IN_ATTACK2
+            lastNoFocusTime = 0
+            CurTime = CurTime
+
+            hook_Add "CreateMove", hookName, ( cmd ) ->
+                if ( CurTime! - lastNoFocusTime ) < 0.25
+                    cmd\RemoveKey( IN_ATTACK )
+                    cmd\RemoveKey( IN_ATTACK2 )
+
+                if system_HasFocus!
+                    return
+
+                lastNoFocusTime = CurTime!
+
+        ->
+            hook_Remove "CreateMove", hookName
+        )
+
+do
+
+    hookName = GetHookName( "False Screen Capture Fix" )
+    :IsGameUIVisible, :ActivateGameUI, :HideGameUI = gui
 
     Patch( "False Screen Capture Fix", ->
         lastState = nil
 
-        hook.Add "OnScreenFocusChanged", "Catching", ( focusState ) ->
+        hook_Add "OnScreenFocusChanged", hookName, ( focusState ) ->
             if focusState
                 if lastState ~= nil
                     if lastState
-                        gui.HideGameUI!
+                        HideGameUI!
                     lastState = nil
             elseif lastState == nil
-                lastState = not gui.IsGameUIVisible!
+                lastState = not IsGameUIVisible!
                 if lastState
-                    gui.ActivateGameUI!
+                    ActivateGameUI!
 
+            return
     ->
-        hook.Remove "OnScreenFocusChanged", "Catching"
+        hook_Remove "OnScreenFocusChanged", hookName
     )
 
 string_sub = string.sub
 
-Patch( "Binds Fix", ->
-    string_StartsWith = string.StartsWith
-    binds = {}
+do
 
-    hook.Add "PlayerBindPress", "Press", ( _, bind, __, keyCode ) ->
-        unless string_StartsWith( bind, "+" )
-            return
+    hookName = GetHookName( "Binds Fix" )
 
-        binds[ keyCode ] = string_sub( bind, 2, #bind )
+    Patch( "Binds Fix", ->
+        string_StartsWith = string.StartsWith
+        binds = {}
 
-    hook.Add "PlayerButtonUp", "Release", ( ply, keyCode ) ->
-        bind = binds[ keyCode ]
-        unless bind
-            return
+        hook_Add "PlayerBindPress", hookName, ( _, bind, __, keyCode ) ->
+            unless string_StartsWith( bind, "+" )
+                return
 
-        binds[ keyCode ] = nil
-        hook_Run( "PlayerBindPress", ply, "-" .. bind, true, keyCode )
+            binds[ keyCode ] = string_sub( bind, 2, #bind )
 
-    hook.Add "OnScreenFocusChanged", "Release", ->
-        ply = LocalPlayer!
-        unless IsValid( ply )
-            return
+        hook_Add "PlayerButtonUp", hookName, ( ply, keyCode ) ->
+            bind = binds[ keyCode ]
+            unless bind
+                return
 
-        for keyCode, bind in pairs( binds )
             binds[ keyCode ] = nil
             hook_Run( "PlayerBindPress", ply, "-" .. bind, true, keyCode )
 
-)
+        hook_Add "OnScreenFocusChanged", hookName, ->
+            ply = LocalPlayer!
+            unless IsValid( ply )
+                return
 
-Patch( "Arrow Camera Control Fix", ->
-    state = 0
+            for keyCode, bind in pairs( binds )
+                binds[ keyCode ] = nil
+                hook_Run( "PlayerBindPress", ply, "-" .. bind, true, keyCode )
 
-    hook.Add "PlayerBindPress", "Binds Capture", ( _, bind, isDown ) ->
-        unless isDown
-            return
+    )
 
-        keyPrase = string_sub( bind, 2, #bind )
-        if keyPrase == "lookup"
-            state = string_sub( bind, 1, 1 ) == "+" and 1 or 0
-            return true
-        elseif keyPrase == "lookdown"
-            state = string_sub( bind, 1, 1 ) == "+" and -1 or 0
-            return true
+do
 
-    cl_pitchspeed = GetConVar( "cl_pitchspeed" )
-    FrameTime = FrameTime
-    IN_SPEED = IN_SPEED
+    hookName = GetHookName( "Arrow Camera Control Fix" )
 
-    hook.Add "StartCommand", "Player Controll", ( _, cmd ) ->
-        if state == 0
-            return
-        angles = cmd\GetViewAngles!
-        angles[ 1 ] = angles[ 1 ] - ( cl_pitchspeed\GetFloat! * ( FrameTime! * state  ) / ( cmd\KeyDown( IN_SPEED ) and 4 or 2 ) )
-        cmd\SetViewAngles( angles )
+    Patch( "Arrow Camera Control Fix", ->
+        state = 0
 
-->
-    hook.Remove "StartCommand", "Player Controll"
-    hook.Remove "PlayerBindPress", "Binds Capture"
-)
+        hook_Add "PlayerBindPress", hookName, ( _, bind, isDown ) ->
+            unless isDown
+                return
+
+            keyPrase = string_sub( bind, 2, #bind )
+            if keyPrase == "lookup"
+                state = string_sub( bind, 1, 1 ) == "+" and 1 or 0
+                return true
+            elseif keyPrase == "lookdown"
+                state = string_sub( bind, 1, 1 ) == "+" and -1 or 0
+                return true
+
+        cl_pitchspeed = GetConVar( "cl_pitchspeed" )
+        FrameTime = FrameTime
+        IN_SPEED = IN_SPEED
+
+        hook_Add "StartCommand", hookName, ( _, cmd ) ->
+            if state == 0
+                return
+            angles = cmd\GetViewAngles!
+            angles[ 1 ] = angles[ 1 ] - ( cl_pitchspeed\GetFloat! * ( FrameTime! * state  ) / ( cmd\KeyDown( IN_SPEED ) and 4 or 2 ) )
+            cmd\SetViewAngles( angles )
+
+    ->
+        hook_Remove "StartCommand", hookName
+        hook_Remove "PlayerBindPress", hookName
+    )
