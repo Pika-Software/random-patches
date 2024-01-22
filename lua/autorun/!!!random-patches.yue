@@ -2,7 +2,6 @@ hook_Add, hook_Remove = hook.Add, hook.Remove
 HOOK_MONITOR_HIGH = HOOK_MONITOR_HIGH
 color_white = color_white
 isfunction = isfunction
-:format = string
 SERVER = SERVER
 
 addonName = "Random Patches v5.6.0"
