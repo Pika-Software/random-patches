@@ -4,7 +4,7 @@ color_white = color_white
 isfunction = isfunction
 SERVER = SERVER
 
-addonName = "Random Patches v5.6.0"
+addonName = "Random Patches v5.7.0"
 
 getHookName = ( patchName, hookName ) ->
     return addonName .. "::" .. patchName .. ( hookName or "" )
@@ -151,6 +151,54 @@ do
 
             ply\RemoveAllDecals!
 
+PLAYER = FindMetaTable( "Player" )
+
+-- Trying to start a new lag compensation session while one is already active!
+-- Source: https://github.com/Heyter/glua-turbo/blob/main/2_random_patches.lua
+do
+
+    func = PLAYER.LagCompensation
+    if iscfunction( func )
+        PLAYER.LagCompensation = ( bool ) =>
+            if @__lagCompensation ~= bool
+                @__lagCompensation = bool
+                func( @, bool )
+
+-- https://github.com/Facepunch/garrysmod-issues/issues/3637
+do
+
+    func = game.CleanUpMap
+    if iscfunction( func )
+        defaultFilters, bits, length = { "env_fire", "entityflame", "_firesmoke" }, 0, 0
+        istable = istable
+        :band = bit
+
+        game.CleanUpMap = ( dontSendToClients, extraFilters ) ->
+            if istable( extraFilters )
+                length, bits = #extraFilters, 0
+                for i = 1, length
+                    for j = 1, 3
+                        if extraFilters[ i ] == defaultFilters[ j ]
+                            bits += 2 ^ j
+                            break
+
+                if band( bits, 2 ) == 0
+                    length += 1
+                    extraFilters[ length ] = defaultFilters[ 1 ]
+
+                if band( bits, 4 ) == 0
+                    length += 1
+                    extraFilters[ length ] = defaultFilters[ 2 ]
+
+                if band( bits, 8 ) == 0
+                    length += 1
+                    extraFilters[ length ] = defaultFilters[ 3 ]
+
+            else
+                extraFilters = defaultFilters
+
+            return func( dontSendToClients, extraFilters )
+
 if SERVER
 
 	CreateConVar( "room_type", "0" )
@@ -160,8 +208,8 @@ if SERVER
 		Type: "point"
 	}, "info_ladder" )
 
-    hook_Add "PlayerSpawn", getHookName( "Player Color Fix" ), ( ply ) ->
-        ply\SetColor( color_white )
+    hook_Add "PlayerSpawn", getHookName( "Player Color Fix" ), =>
+        @SetColor( color_white )
 
 	Register( "Default Deploy Speed Fix", ->
 		RunConsoleCommand( "sv_defaultdeployspeed", "1" ),
@@ -171,7 +219,7 @@ if SERVER
             RunConsoleCommand( "sv_defaultdeployspeed", conVar\GetDefault! )
     )
 
-	ENTITY, PLAYER = FindMetaTable( "Entity" ), FindMetaTable( "Player" )
+	ENTITY = FindMetaTable( "Entity" )
 
     Register( "Steam Auth Protection", ( hookName ) ->
         sv_lan = GetConVar( "sv_lan" )
@@ -198,16 +246,16 @@ if SERVER
         :SetPos = ENTITY
         players = {}
 
-        PLAYER.SetPos = ( ply, origin ) ->
-            players[ ply ] = origin
+        PLAYER.SetPos = ( origin ) =>
+            players[ @ ] = origin
 
-        hook_Add "PlayerDisconnected", hookName, ( ply ) ->
-            players[ ply ] = nil
+        hook_Add "PlayerDisconnected", hookName, =>
+            players[ @ ] = nil
 
-        hook_Add "FinishMove", hookName, ( ply ) ->
-            if players[ ply ] ~= nil
-                SetPos( ply, players[ ply ] )
-                players[ ply ] = nil
+        hook_Add "FinishMove", hookName, =>
+            if players[ @ ] ~= nil
+                SetPos( @, players[ @ ] )
+                players[ @ ] = nil
                 return true
 
     :GetInternalVariable = ENTITY
@@ -267,13 +315,13 @@ if SERVER
         if iscfunction( func )
             util.GetUserID = func
 
-            PLAYER.UserID = ( ply ) ->
-                return ply.__userid or func( ply )
+            PLAYER.UserID = =>
+                return @__userid or func( @ )
 
         do
 
-            hookName, cacheFunc = getHookName( "UserID Cache" ), ( ply ) ->
-                ply.__userid = func( ply )
+            hookName, cacheFunc = getHookName( "UserID Cache" ), =>
+                @__userid = func( @ )
 
             hook_Add "PlayerInitialSpawn", hookName, cacheFunc, HOOK_MONITOR_HIGH
             hook_Add "PlayerAuthed", hookName, cacheFunc, HOOK_MONITOR_HIGH
