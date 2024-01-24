@@ -4,7 +4,7 @@ color_white = color_white
 isfunction = isfunction
 SERVER = SERVER
 
-addonName = "Random Patches v5.7.0"
+addonName = "Random Patches v5.8.0"
 
 getHookName = ( patchName, hookName ) ->
     return addonName .. "::" .. patchName .. ( hookName or "" )
@@ -65,7 +65,7 @@ do
     do
 
         pairs = pairs
-        keys = {}
+        keys = setmetatable( {}, { __mode: "v" } )
 
         table.Random = ( tbl, issequential ) ->
             if issequential
@@ -80,10 +80,7 @@ do
 
             else
 
-                for i = 1, length
-                    keys[ i ] = nil
                 length = 0
-
                 for key in pairs( tbl )
                     length += 1
                     keys[ length ] = key
@@ -198,6 +195,10 @@ do
                 extraFilters = defaultFilters
 
             return func( dontSendToClients, extraFilters )
+
+hook_Add "PlayerFootstep", getHookName( "Player Footstep Fix" ), =>
+    unless @IsOnGround!
+        return true
 
 if SERVER
 
