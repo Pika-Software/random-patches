@@ -4,7 +4,7 @@ color_white = color_white
 isfunction = isfunction
 SERVER = SERVER
 
-addonName = "Random Patches v5.9.0"
+addonName = "Random Patches v5.9.1"
 
 getHookName = ( patchName, hookName ) ->
     return addonName .. "::" .. patchName .. ( hookName or "" )
@@ -382,25 +382,13 @@ if CLIENT and not MENU_DLL
                 if fov ~= nil
                     view.fov = fov
 
-                if x ~= nil
-                    view.x = x
-
-                if y ~= nil
-                    view.y = y
-
-                w = w or view.w
-                h = h or view.h
-
-                if w ~= nil and h ~= nil
+                if x ~= nil and y ~= nil and w ~= nil and h ~= nil
+                    view.x, view.y = x, y
+                    view.w, view.h = w, h
                     view.aspect = w / h
 
-                view.w, view.h = w, h
-
-                if znear ~= nil
-                    view.znear = znear
-
-                if zfar ~= nil
-                    view.zfar = zfar
+                if znear ~= nil and zfar ~= nil
+                    view.znear, view.zfar = znear, zfar
 
                 return Start( view )
 
