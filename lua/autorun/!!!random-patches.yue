@@ -4,7 +4,7 @@ color_white = color_white
 isfunction = isfunction
 SERVER = SERVER
 
-addonName = "Random Patches v5.9.1"
+addonName = "Random Patches v5.9.2"
 
 getHookName = ( patchName, hookName ) ->
     return addonName .. "::" .. patchName .. ( hookName or "" )
@@ -377,18 +377,21 @@ if CLIENT and not MENU_DLL
             view = { type: "3D" }
 
             cam.Start3D = ( origin, angles, fov, x, y, w, h, znear, zfar ) ->
-                view.origin, view.angles = origin, angles
-
-                if fov ~= nil
-                    view.fov = fov
+                view.origin, view.angles, view.fov = origin, angles, fov
 
                 if x ~= nil and y ~= nil and w ~= nil and h ~= nil
                     view.x, view.y = x, y
                     view.w, view.h = w, h
                     view.aspect = w / h
+                else
+                    view.x, view.y = nil, nil
+                    view.w, view.h = nil, nil
+                    view.aspect = nil
 
                 if znear ~= nil and zfar ~= nil
                     view.znear, view.zfar = znear, zfar
+                else
+                    view.znear, view.zfar = nil, nil
 
                 return Start( view )
 
