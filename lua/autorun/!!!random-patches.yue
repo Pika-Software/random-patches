@@ -2,9 +2,11 @@ hook_Add, hook_Remove = hook.Add, hook.Remove
 HOOK_MONITOR_HIGH = HOOK_MONITOR_HIGH
 color_white = color_white
 isfunction = isfunction
+:Simple = timer
 SERVER = SERVER
+pairs = pairs
 
-addonName = "Random Patches v5.9.2"
+addonName = "Random Patches v5.10.0"
 
 getHookName = ( patchName, hookName ) ->
     return addonName .. "::" .. patchName .. ( hookName or "" )
@@ -40,6 +42,10 @@ do
 -- GLua improvements
 string.StartsWith = string.StartsWith or string.StartWith
 
+table.Empty = ( tbl ) ->
+    for key in pairs( tbl )
+        tbl[ key ] = nil
+
 math.Clamp = ( number, min, max ) ->
 	if number < min
         return min
@@ -64,7 +70,6 @@ do
 
     do
 
-        pairs = pairs
         keys = setmetatable( {}, { __mode: "v" } )
 
         table.Random = ( tbl, issequential ) ->
@@ -95,16 +100,134 @@ do
 
             return tbl[ index ], index
 
--- Function that returns true if the value is a C function
-iscfunction = nil
+ENTITY, PLAYER = nil, nil
 do
 
-    :getinfo = debug
+    findMetaTable = CFindMetaTable
+    unless findMetaTable
+        findMetaTable = FindMetaTable
+        global CFindMetaTable = findMetaTable
 
-    iscfunction = ( value ) ->
-        return isfunction( value ) and getinfo( value ).short_src == "[C]"
+    registry = _R
+    unless registry
 
-    debug.iscfunction = iscfunction
+        registry = setmetatable( {}, {
+            "__index": ( tbl, key ) ->
+                value = findMetaTable( key )
+                if value == nil
+                    return
+
+                tbl[ key ] = value
+                return value
+        } )
+
+        global _R = registry
+
+    global FindMetaTable = ( name ) ->
+        return registry[ name ]
+
+    debug.getregistry = ->
+        return registry
+
+    ENTITY, PLAYER = registry.Entity, registry.Player
+
+    getCTable = ENTITY.GetCTable
+    unless getCTable
+        getCTable = ENTITY.GetTable
+        ENTITY.GetCTable = getCTable
+
+    cache = {}
+
+    hook_Add "EntityRemove", getHookName( "Entity.GetTable" ), =>
+        Simple 0, ->
+            cache[ @ ] = nil
+
+    getTable = =>
+        result = cache[ @ ]
+        unless result
+            result = getCTable( @ ) or {}
+            cache[ @ ] = result
+
+        return result
+
+    ENTITY.GetTable = getTable
+
+    ENTITY.__index = ( key ) =>
+        value = ENTITY[ key ]
+        if value == nil
+            value = getTable( @ )[ key ]
+
+        return value
+
+    PLAYER.__index = ( key ) =>
+        value = PLAYER[ key ]
+        if value == nil
+            value = ENTITY[ key ]
+            if value == nil
+                return getTable( @ )[ key ]
+
+        return value
+
+    do
+
+        :GetOwner = ENTITY
+        :Weapon = registry
+
+        Weapon.__index = ( key ) =>
+            if key == "Owner"
+                return GetOwner( @ )
+
+            value = Weapon[ key ]
+            if value == nil
+                value = ENTITY[ key ]
+                if value == nil
+                    return getTable( @ )[ key ]
+
+            return value
+
+    do
+
+        :Vehicle = registry
+
+        Vehicle.__index = ( key ) =>
+            value = Vehicle[ key ]
+            if value == nil
+                value = ENTITY[ key ]
+                if value == nil
+                    return getTable( @ )[ key ]
+
+            return value
+
+    do
+
+        :NPC = registry
+
+        NPC.__index = ( key ) =>
+            value = NPC[ key ]
+            if value == nil
+                value = ENTITY[ key ]
+                if value == nil
+                    return getTable( @ )[ key ]
+
+            return value
+
+:IsValid = ENTITY
+
+do
+
+    GetConVar_Internal = GetConVar_Internal
+    cache = {}
+
+    global GetConVar = ( name ) ->
+        if cache[ name ] == nil
+            value = GetConVar_Internal( name )
+            if value == nil
+                return
+
+            cache[ name ] = value
+            return value
+
+        return cache[ name ]
 
 Register( "Player Shoot Position Fix", ( hookName ) ->
     hook_Add "SetupMove", hookName, =>
@@ -130,7 +253,6 @@ true )
 do
 
     gameevent.Listen( "player_hurt" )
-    :Simple = timer
     Player = Player
 
     hook_Add "player_hurt", getHookName( "Player Decals Fix" ), ( data ) ->
@@ -139,31 +261,30 @@ do
             return
 
         ply = Player( data.userid )
-        unless ply\IsValid! and ply\Alive!
-            return
-
-        Simple 0.25, ->
-            unless ply\IsValid!
-                return
-
-            ply\RemoveAllDecals!
-
-PLAYER = FindMetaTable( "Player" )
+        if IsValid( ply ) and ply\Alive!
+            Simple 0.25, ->
+                if IsValid( ply )
+                    ply\RemoveAllDecals!
 
 -- Trying to start a new lag compensation session while one is already active!
 -- Source: https://github.com/Heyter/glua-turbo/blob/main/2_random_patches.lua
 do
 
-    func = PLAYER.LagCompensation
-    if iscfunction( func )
-        PLAYER.LagCompensation = ( bool ) =>
-            if @__lagCompensation ~= bool
-                @__lagCompensation = bool
-                func( @, bool )
+    cLagCompensation = PLAYER.CLagCompensation
+    unless cLagCompensation
+        cLagCompensation = PLAYER.LagCompensation
+        PLAYER.CLagCompensation = cLagCompensation
+
+    PLAYER.LagCompensation = ( bool ) =>
+        if @m_bLagCompensation ~= bool
+            @m_bLagCompensation = bool
+            cLagCompensation( @, bool )
 
 hook_Add "PlayerFootstep", getHookName( "Player Footstep Fix" ), =>
-    unless @IsOnGround!
-        return true
+    if @IsOnGround!
+        return
+
+    return true
 
 do
 
@@ -185,6 +306,18 @@ if SERVER
 		Type: "point"
 	}, "info_ladder" )
 
+    do
+
+        :GetPhysicsObject = ENTITY
+
+        ENTITY.PhysWake = =>
+            phys = GetPhysicsObject( @ )
+            if phys and phys\IsValid!
+                phys\Wake!
+                return true
+
+            return false
+
     hook_Add "PlayerSpawn", getHookName( "Player Color Fix" ), =>
         @SetColor( color_white )
 
@@ -195,8 +328,6 @@ if SERVER
         if conVar ~= nil
             RunConsoleCommand( "sv_defaultdeployspeed", conVar\GetDefault! )
     )
-
-	ENTITY = FindMetaTable( "Entity" )
 
     Register( "Steam Auth Protection", ( hookName ) ->
         sv_lan = GetConVar( "sv_lan" )
@@ -288,17 +419,18 @@ if SERVER
 	-- https://i.imgur.com/a0lmB9m.png
     do
 
-        func = PLAYER.UserID
-        if iscfunction( func )
-            util.GetUserID = func
+        cUserID = PLAYER.CUserID
+        unless cUserID
+            cUserID = PLAYER.UserID
+            PLAYER.CUserID = cUserID
 
-            PLAYER.UserID = =>
-                return @__userid or func( @ )
+        PLAYER.UserID = =>
+            return @m_bUserID or cUserID( @ )
 
         do
 
             hookName, cacheFunc = getHookName( "UserID Cache" ), =>
-                @__userid = func( @ )
+                @m_bUserID = cUserID( @ )
 
             hook_Add "PlayerInitialSpawn", hookName, cacheFunc, HOOK_MONITOR_HIGH
             hook_Add "PlayerAuthed", hookName, cacheFunc, HOOK_MONITOR_HIGH
@@ -342,23 +474,45 @@ if SERVER
 
 if CLIENT and not MENU_DLL
 
+    do
+
+        gameevent.Listen( "server_cvar" )
+
+        :GetDefault = FindMetaTable( "ConVar" )
+        :OnConVarChanged = cvars
+        GetConVar = GetConVar
+
+        values, name, old, new = {}, "", "", ""
+
+        hook_Add "server_cvar", "cvars.OnConVarChanged", ( data ) ->
+            name, new = data.cvarname, data.cvarvalue
+
+            old = values[ name ]
+            if old == nil
+                old = GetDefault( GetConVar( name ) )
+                values[ name ] = old
+            else
+                values[ name ] = new
+
+            OnConVarChanged( name, old, new )
+
 	-- Speeding up LocalPlayer
     do
 
-        func = LocalPlayer
+        getLocalPlayer = util.GetLocalPlayer
+        unless getLocalPlayer
+            getLocalPlayer = LocalPlayer
+            util.GetLocalPlayer = getLocalPlayer
 
-        if iscfunction( func )
-            util.GetLocalPlayer = func
-            entity = nil
+        entity = NULL
 
-            global LocalPlayer = ->
-                entity = func!
+        global LocalPlayer = ->
+            entity = getLocalPlayer!
+            if entity and IsValid( entity )
+                global LocalPlayer = ->
+                    return entity
 
-                if entity and entity\IsValid!
-                    global LocalPlayer = ->
-                        return entity
-
-                return entity
+            return entity
 
     -- https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/includes/extensions/client/render.lua
     do
@@ -398,23 +552,32 @@ if CLIENT and not MENU_DLL
 	-- https://github.com/Facepunch/garrysmod-issues/issues/1091
     do
 
-        :max = math
-		camStack = 0
+        camStack = 0
 
-        :StartOrthoView = cam
-        if iscfunction( StartOrthoView )
-            cam.StartOrthoView = ( a, b, c, d ) ->
-                camStack = camStack + 1
-                StartOrthoView( a, b, c, d )
+        cStartOrthoView = cam.CStartOrthoView
+        unless cStartOrthoView
+            cStartOrthoView = cam.StartOrthoView
+            cam.CStartOrthoView = cStartOrthoView
 
-        :EndOrthoView = cam
-        if iscfunction( EndOrthoView )
-            cam.EndOrthoView = ->
-                if camStack == 0
-                    return
+        cam.StartOrthoView = ( a, b, c, d ) ->
+            camStack += 1
+            cStartOrthoView( a, b, c, d )
 
-                camStack = max( 0, camStack - 1 )
-                EndOrthoView!
+        cEndOrthoView = cam.CEndOrthoView
+        unless cEndOrthoView
+            cEndOrthoView = cam.EndOrthoView
+            cam.CEndOrthoView = cEndOrthoView
+
+        cam.EndOrthoView = ->
+            if camStack == 0
+                return
+
+            camStack -= 1
+
+            if camStack < 0
+                camStack = 0
+
+            cEndOrthoView!
 
     do
 
@@ -454,4 +617,9 @@ if CLIENT and not MENU_DLL
                     if lastState
                         ActivateGameUI!
 
-MsgC( SERVER and Color( 50, 100, 250 ) or Color( 250, 100, 50 ), "[" .. addonName .. "] ", color_white, table.Random( { "Here For You ♪", "Game Patched!", "OK", "Successfully initialized!", "Hello there", "Specially for you!", "Hello?", "Wow", "Powered by Pika Software!", "Made with <3", "Yeah, well", "Init!", "Im here :" }, true ) .. "\n" )
+MsgC( SERVER and Color( 50, 100, 250 ) or Color( 250, 100, 50 ), "[" .. addonName .. "] ", color_white, table.Random( {
+    "Here For You ♪", "Game Patched!", "OK", "Successfully initialized!",
+    "Powered by Pika Software!", "Made with <3", "Yeah, well", "Alright",
+    "Hello there", "Specially for you!", "Hello?", "Wow", "I'm here :",
+    "Init!", "Say hi!", "Performance Update"
+}, true ) .. "\n" )
