@@ -6,7 +6,7 @@ isfunction = isfunction
 SERVER = SERVER
 pairs = pairs
 
-addonName = "Random Patches v5.10.0"
+addonName = "Random Patches v5.11.0"
 
 getHookName = ( patchName, hookName ) ->
     return addonName .. "::" .. patchName .. ( hookName or "" )
@@ -110,6 +110,7 @@ do
 
     registry = _R
     unless registry
+        rawset = rawset
 
         registry = setmetatable( {}, {
             "__index": ( tbl, key ) ->
@@ -117,7 +118,7 @@ do
                 if value == nil
                     return
 
-                tbl[ key ] = value
+                rawset( tbl, key, value )
                 return value
         } )
 
@@ -476,6 +477,24 @@ if CLIENT and not MENU_DLL
 
     do
 
+        :Forward = FindMetaTable( "Angle" )
+        origin, angles, vector = Vector!, Angle!, Vector!
+
+        hook_Add "RenderScene", getHookName( "Faster EyePos, EyeAngles and EyeVector" ), ( o, a ) ->
+            origin, angles, vector = o, a, Forward( a ),
+            PRE_HOOK or HOOK_MONITOR_HIGH
+
+        global EyePos = ->
+            return origin
+
+        global EyeAngles = ->
+            return angles
+
+        global EyeVector = ->
+            return vector
+
+    do
+
         gameevent.Listen( "server_cvar" )
 
         :GetDefault = FindMetaTable( "ConVar" )
@@ -489,12 +508,17 @@ if CLIENT and not MENU_DLL
 
             old = values[ name ]
             if old == nil
-                old = GetDefault( GetConVar( name ) )
+                conVar = GetConVar( name )
+                unless conVar
+                    return
+
+                old = GetDefault( conVar )
                 values[ name ] = old
             else
                 values[ name ] = new
 
             OnConVarChanged( name, old, new )
+            return
 
 	-- Speeding up LocalPlayer
     do
@@ -621,5 +645,6 @@ MsgC( SERVER and Color( 50, 100, 250 ) or Color( 250, 100, 50 ), "[" .. addonNam
     "Here For You ♪", "Game Patched!", "OK", "Successfully initialized!",
     "Powered by Pika Software!", "Made with <3", "Yeah, well", "Alright",
     "Hello there", "Specially for you!", "Hello?", "Wow", "I'm here :",
-    "Init!", "Say hi!", "Performance Update"
+    "Init!", "Say hi!", "Performance Update", "Yippee!",
+    "Thanks for installation <3"
 }, true ) .. "\n" )
