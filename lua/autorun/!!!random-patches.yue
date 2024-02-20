@@ -2,11 +2,12 @@ hook_Add, hook_Remove = hook.Add, hook.Remove
 HOOK_MONITOR_HIGH = HOOK_MONITOR_HIGH
 color_white = color_white
 isfunction = isfunction
+CurTime = CurTime
 :Simple = timer
 SERVER = SERVER
 pairs = pairs
 
-addonName = "Random Patches v5.11.0"
+addonName = "Random Patches v5.12.0"
 
 getHookName = ( patchName, hookName ) ->
     return addonName .. "::" .. patchName .. ( hookName or "" )
@@ -100,6 +101,20 @@ do
 
             return tbl[ index ], index
 
+do
+
+    :yield = coroutine
+
+    coroutine.wait = ( seconds ) ->
+        endTime = CurTime! + seconds
+        ::wait::
+
+        if endTime < CurTime!
+            return
+
+        yield!
+        goto wait
+
 ENTITY, PLAYER = nil, nil
 do
 
@@ -139,17 +154,15 @@ do
 
     cache = {}
 
-    hook_Add "EntityRemove", getHookName( "Entity.GetTable" ), =>
+    hook_Add "EntityRemove", getHookName( "Entity.GetTable" ), ( entity ) ->
         Simple 0, ->
-            cache[ @ ] = nil
+            cache[ entity ] = nil
 
-    getTable = =>
-        result = cache[ @ ]
-        unless result
-            result = getCTable( @ ) or {}
-            cache[ @ ] = result
+    getTable = ( entity ) ->
+        if cache[ entity ] == nil
+            cache[ entity ] = getCTable( entity ) or {}
 
-        return result
+        return cache[ entity ]
 
     ENTITY.GetTable = getTable
 
@@ -212,6 +225,7 @@ do
 
             return value
 
+:Alive, :IsBot = PLAYER
 :IsValid = ENTITY
 
 do
@@ -231,17 +245,19 @@ do
         return cache[ name ]
 
 Register( "Player Shoot Position Fix", ( hookName ) ->
+    :GetShootPos = PLAYER
+
     hook_Add "SetupMove", hookName, =>
-        if @IsBot! or not @Alive!
+        if IsBot( @ ) or not Alive( @ )
             return
 
-        @m_RealShootPos = @GetShootPos!
+        @m_RealShootPos = GetShootPos( @ )
 
     hook_Add "EntityFireBullets", hookName, ( data ) =>
-        if not @IsPlayer! or @IsBot! or not @Alive!
+        if not @IsPlayer! or IsBot( @ ) or not Alive( @ )
             return
 
-        src = @GetShootPos!
+        src = GetShootPos( @ )
         if data.Src == src
             data.Src = @m_RealShootPos or src
             return true
@@ -262,7 +278,7 @@ do
             return
 
         ply = Player( data.userid )
-        if IsValid( ply ) and ply\Alive!
+        if IsValid( ply ) and Alive( ply )
             Simple 0.25, ->
                 if IsValid( ply )
                     ply\RemoveAllDecals!
@@ -332,16 +348,15 @@ if SERVER
 
     Register( "Steam Auth Protection", ( hookName ) ->
         sv_lan = GetConVar( "sv_lan" )
-        :Kick = PLAYER
 
         hook_Add( "PlayerInitialSpawn", hookName, =>
             if sv_lan\GetBool!
                 return
 
-            if @IsBot! or @IsListenServerHost! or @IsFullyAuthenticated!
+            if IsBot( @ ) or @IsListenServerHost! or @IsFullyAuthenticated!
                 return
 
-            Kick( @, "Your SteamID wasn\'t fully authenticated, try restart your Steam client." ),
+            @Kick( "Your SteamID wasn\'t fully authenticated, try restart your Steam client." ),
         HOOK_MONITOR_HIGH ),
     ( hookName ) ->
         hook_Remove "PlayerInitialSpawn", hookName
@@ -611,7 +626,6 @@ if CLIENT and not MENU_DLL
 
             IN_ATTACK, IN_ATTACK2 = IN_ATTACK, IN_ATTACK2
             lastNoFocusTime = 0
-            CurTime = CurTime
 
             hook_Add "CreateMove", getHookName( "Focus Attack Fix" ), ( cmd ) ->
                 if ( CurTime! - lastNoFocusTime ) < 0.25
