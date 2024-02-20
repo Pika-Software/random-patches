@@ -7,7 +7,7 @@ CurTime = CurTime
 SERVER = SERVER
 pairs = pairs
 
-addonName = "Random Patches v5.12.0"
+addonName = "Random Patches v5.12.1"
 
 getHookName = ( patchName, hookName ) ->
     return addonName .. "::" .. patchName .. ( hookName or "" )
@@ -489,24 +489,6 @@ if SERVER
             TakePhysicsDamage( entity, damageInfo )
 
 if CLIENT and not MENU_DLL
-
-    do
-
-        :Forward = FindMetaTable( "Angle" )
-        origin, angles, vector = Vector!, Angle!, Vector!
-
-        hook_Add "RenderScene", getHookName( "Faster EyePos, EyeAngles and EyeVector" ), ( o, a ) ->
-            origin, angles, vector = o, a, Forward( a ),
-            PRE_HOOK or HOOK_MONITOR_HIGH
-
-        global EyePos = ->
-            return origin
-
-        global EyeAngles = ->
-            return angles
-
-        global EyeVector = ->
-            return vector
 
     do
 
