@@ -1,13 +1,12 @@
 hook_Add, hook_Remove = hook.Add, hook.Remove
 HOOK_MONITOR_HIGH = HOOK_MONITOR_HIGH
 color_white = color_white
-isfunction = isfunction
 CurTime = CurTime
 :Simple = timer
 SERVER = SERVER
 pairs = pairs
 
-addonName = "Random Patches v5.12.1"
+addonName = "Random Patches v5.13.0"
 
 getHookName = ( patchName, hookName ) ->
     return addonName .. "::" .. patchName .. ( hookName or "" )
@@ -25,7 +24,7 @@ do
     Register = ( name, enable, disable, shared ) ->
         hookName = getHookName( name )
 
-        unless isfunction( disable )
+        if disable == nil
             return enable( hookName )
 
         conVarName = ( SERVER and "sv_" or "cl_" ) .. "patch_" .. gsub( lower( name ), "[%s%p]", "_" )
@@ -38,7 +37,8 @@ do
                 enable( hookName )
             else
                 disable( hookName )
-        addonName .. "::" .. name )
+
+        addonName )
 
 -- GLua improvements
 string.StartsWith = string.StartsWith or string.StartWith
@@ -115,7 +115,7 @@ do
         yield!
         goto wait
 
-ENTITY, PLAYER = nil, nil
+ENTITY, PLAYER, registry = nil, nil, nil
 do
 
     findMetaTable = CFindMetaTable
@@ -224,6 +224,207 @@ do
                     return getTable( @ )[ key ]
 
             return value
+
+    do
+
+        :getmetatable, :setmetatable = debug
+
+        object = nil
+        metatable = getmetatable( object )
+        if metatable == nil
+            metatable = {}
+            setmetatable( object, metatable )
+
+        registry[ "nil" ] = metatable
+
+        object = 0
+        metatable = getmetatable( object )
+        if metatable == nil
+            metatable = {}
+            setmetatable( object, metatable )
+
+        registry[ "number" ] = metatable
+
+        object = ""
+        metatable = getmetatable( object )
+        if metatable == nil
+            metatable = {}
+            setmetatable( object, metatable )
+
+        registry[ "string" ] = metatable
+
+        object = false
+        metatable = getmetatable( object )
+        if metatable == nil
+            metatable = {}
+            setmetatable( object, metatable )
+
+        registry[ "boolean" ] = metatable
+
+        object = ->
+        metatable = getmetatable( object )
+        if getmetatable( object ) == nil
+            metatable = {}
+            setmetatable( object, metatable )
+
+        registry[ "function" ] = metatable
+
+        object = coroutine.create( object )
+        metatable = getmetatable( object )
+        if metatable == nil
+            metatable = {}
+            setmetatable( object, metatable )
+
+        registry[ "thread" ] = metatable
+
+do
+
+    getmetatable = getmetatable
+
+    ENTITY.IsPlayer = =>
+        return getmetatable( @ ) == PLAYER
+
+    do
+
+        metatable = registry[ "Vehicle" ]
+
+        ENTITY.IsVehicle = =>
+            return getmetatable( @ ) == metatable
+
+    do
+
+        metatable = registry[ "NPC" ]
+
+        ENTITY.IsNPC = =>
+            return getmetatable( @ ) == metatable
+
+    do
+
+        metatable = registry[ "nil" ]
+
+        global isnil = =>
+            return getmetatable( @ ) == metatable
+
+    do
+
+        metatable = registry[ "number" ]
+
+        global isnumber = =>
+            return getmetatable( @ ) == registry[ "number" ]
+
+    do
+
+        metatable = registry[ "string" ]
+
+        global isstring = =>
+            return getmetatable( @ ) == metatable
+
+    do
+
+        metatable = registry[ "boolean" ]
+
+        global isbool = =>
+            return getmetatable( @ ) == metatable
+
+    do
+
+        metatable = registry[ "function" ]
+
+        global isfunction = =>
+            return getmetatable( @ ) == metatable
+
+    do
+
+        metatable = registry[ "thread" ]
+
+        global isthread = =>
+            return getmetatable( @ ) == metatable
+
+    do
+
+        metatable = registry[ "Vector" ]
+
+        global isvector = =>
+            return getmetatable( @ ) == metatable
+
+    do
+
+        metatable = registry[ "Vector" ]
+
+        global isvector = =>
+            return getmetatable( @ ) == metatable
+
+    do
+
+        metatable = registry[ "Angle" ]
+
+        global isangle = =>
+            return getmetatable( @ ) == metatable
+
+    do
+
+        metatable = registry[ "VMatrix" ]
+
+        global ismatrix = =>
+            return getmetatable( @ ) == metatable
+
+    do
+
+        metatable = registry[ "Panel" ]
+
+        global ispanel = =>
+            return getmetatable( @ ) == metatable
+
+    do
+
+        metatable = registry[ "Color" ]
+        isnumber = isnumber
+        istable = istable
+
+        func = =>
+            return getmetatable( @ ) == metatable
+
+        global IsColor = func
+        global iscolor = func
+
+        do
+
+            setmetatable = setmetatable
+
+            global Color = ( r, g, b, a ) ->
+                if r
+                    if r > 255
+                        r = 255
+                    elseif r < 0
+                        r = 0
+                else
+                    r = 255
+
+                if g
+                    if g > 255
+                        g = 255
+                    elseif g < 0
+                        g = 0
+                else
+                    g = 255
+
+                if b
+                    if b > 255
+                        b = 255
+                    elseif b < 0
+                        b = 0
+                else
+                    b = 255
+
+                if a
+                    if a > 255
+                        a = 255
+                    elseif a < 0
+                        a = 0
+                else
+                    a = 255
+
+                return setmetatable( { :r, :g, :b, :a }, metatable )
 
 :Alive, :IsBot = PLAYER
 :IsValid = ENTITY
