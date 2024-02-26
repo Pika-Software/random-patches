@@ -6,7 +6,7 @@ CurTime = CurTime
 SERVER = SERVER
 pairs = pairs
 
-addonName = "Random Patches v5.13.0"
+addonName = "Random Patches v5.13.1"
 
 getHookName = ( patchName, hookName ) ->
     return addonName .. "::" .. patchName .. ( hookName or "" )
@@ -390,8 +390,13 @@ do
         do
 
             setmetatable = setmetatable
+            isnumber = isnumber
+            tonumber = tonumber
 
             global Color = ( r, g, b, a ) ->
+                unless isnumber( r )
+                    r = tonumber( r )
+
                 if r
                     if r > 255
                         r = 255
@@ -399,6 +404,9 @@ do
                         r = 0
                 else
                     r = 255
+
+                unless isnumber( g )
+                    g = tonumber( g )
 
                 if g
                     if g > 255
@@ -408,6 +416,9 @@ do
                 else
                     g = 255
 
+                unless isnumber( b )
+                    b = tonumber( b )
+
                 if b
                     if b > 255
                         b = 255
@@ -415,6 +426,9 @@ do
                         b = 0
                 else
                     b = 255
+
+                unless isnumber( a )
+                    a = tonumber( a )
 
                 if a
                     if a > 255
