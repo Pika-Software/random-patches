@@ -6,7 +6,7 @@ CurTime = CurTime
 SERVER = SERVER
 pairs = pairs
 
-addonName = "Random Patches v5.13.1"
+addonName = "Random Patches v5.14.0"
 
 getHookName = ( patchName, hookName ) ->
     return addonName .. "::" .. patchName .. ( hookName or "" )
@@ -277,55 +277,126 @@ do
 
         registry[ "thread" ] = metatable
 
+:IsValid, :GetClass = ENTITY
+:Alive, :IsBot = PLAYER
+
 do
 
     getmetatable = getmetatable
+    :format = string
 
-    ENTITY.IsPlayer = =>
-        return getmetatable( @ ) == PLAYER
+    -- global tostring
+    do
 
+        type = type
+
+        global tostring = ( value ) ->
+            metatable = getmetatable( value )
+            if metatable
+                func = metatable.__tostring
+                if func
+                    return func( value )
+
+            return format( "%s: %p", type( value ), value )
+
+    :EntIndex = ENTITY
+
+    -- Entity
+    do
+
+        ENTITY.__type = "Entity"
+        :IsWorld = ENTITY
+
+        ENTITY.__tostring = ( entity ) ->
+            if IsValid( entity ) or IsWorld( entity )
+                return ( entity.__type or "Entity" ) .. " [" .. EntIndex( entity ) .. "][" .. GetClass( entity ) .. "]"
+
+            return "[NULL " .. ( entity.__type or "Entity" ) .. "]"
+
+    -- Player
+    do
+
+        PLAYER.__type = "Player"
+        :Nick = PLAYER
+
+        PLAYER.__tostring = =>
+            return "Player [" .. EntIndex( @ ) .. "][" .. Nick( @ ) .. "]"
+
+        ENTITY.IsPlayer = =>
+            return getmetatable( @ ) == PLAYER
+
+    -- Vehicle
     do
 
         metatable = registry[ "Vehicle" ]
+        metatable.__type = "Vehicle"
 
         ENTITY.IsVehicle = =>
             return getmetatable( @ ) == metatable
 
+    -- NPC
     do
 
         metatable = registry[ "NPC" ]
+        metatable.__type = "NPC"
 
         ENTITY.IsNPC = =>
             return getmetatable( @ ) == metatable
 
+    -- NextBot
+    do
+
+        metatable = registry[ "NextBot" ]
+        metatable.__type = "NextBot"
+
+        ENTITY.IsNextBot = =>
+            return getmetatable( @ ) == metatable
+
+    -- nil
     do
 
         metatable = registry[ "nil" ]
 
+        metatable.__tostring = ->
+            return "nil"
+
         global isnil = =>
             return getmetatable( @ ) == metatable
 
+    -- number
     do
 
         metatable = registry[ "number" ]
 
+        metatable.__tostring = ( number ) ->
+            return "" .. number
+
         global isnumber = =>
             return getmetatable( @ ) == registry[ "number" ]
 
+    -- string
     do
 
         metatable = registry[ "string" ]
 
+        metatable.__tostring = ( str ) ->
+            return str
+
         global isstring = =>
             return getmetatable( @ ) == metatable
 
+    -- boolean
     do
 
         metatable = registry[ "boolean" ]
 
+        metatable.__tostring = ( boolean ) ->
+            return boolean and "true" or "false"
+
         global isbool = =>
             return getmetatable( @ ) == metatable
 
+    -- function
     do
 
         metatable = registry[ "function" ]
@@ -333,59 +404,71 @@ do
         global isfunction = =>
             return getmetatable( @ ) == metatable
 
-    do
-
-        metatable = registry[ "thread" ]
-
-        global isthread = =>
-            return getmetatable( @ ) == metatable
-
+    -- Vector
     do
 
         metatable = registry[ "Vector" ]
 
-        global isvector = =>
-            return getmetatable( @ ) == metatable
-
-    do
-
-        metatable = registry[ "Vector" ]
+        metatable.__tostring = ( vector ) ->
+            return format( "%f, %f, %f", vector[ 1 ], vector[ 2 ], vector[ 3 ] )
 
         global isvector = =>
             return getmetatable( @ ) == metatable
 
+    -- Angle
     do
 
         metatable = registry[ "Angle" ]
 
+        metatable.__tostring = ( angles ) ->
+            return format( "%f, %f, %f", angles[ 1 ], angles[ 2 ], angles[ 3 ] )
+
         global isangle = =>
             return getmetatable( @ ) == metatable
 
+    -- VMatrix
     do
 
         metatable = registry[ "VMatrix" ]
+        :GetField = metatable
+
+        metatable.__tostring = ( matrix ) ->
+            return format( "[%f, %f, %f, %f]\n[%f, %f, %f, %f]\n[%f, %f, %f, %f]\n[%f, %f, %f, %f]",
+                GetField( matrix, 1, 1 ), GetField( matrix, 1, 2 ), GetField( matrix, 1, 3 ), GetField( matrix, 1, 4 ),
+                GetField( matrix, 2, 1 ), GetField( matrix, 2, 2 ), GetField( matrix, 2, 3 ), GetField( matrix, 2, 4 ),
+                GetField( matrix, 3, 1 ), GetField( matrix, 3, 2 ), GetField( matrix, 3, 3 ), GetField( matrix, 3, 4 ),
+                GetField( matrix, 4, 1 ), GetField( matrix, 4, 2 ), GetField( matrix, 4, 3 ), GetField( matrix, 4, 4 )
+            )
 
         global ismatrix = =>
             return getmetatable( @ ) == metatable
 
-    do
+    -- Panel
+    if CLIENT
 
         metatable = registry[ "Panel" ]
+
+        :GetName, :GetClassName, :GetBounds = metatable
+        x, y, w, h = 0, 0, 0, 0
+
+        metatable.__tostring = ( pnl ) ->
+            x, y, w, h = GetBounds( pnl )
+            return "Panel: [name:" .. GetName( pnl ) .."][class:" .. GetClassName( pnl ) .. "][" .. x .. "," .. y .. "," .. w .. "," .. h .. "]"
 
         global ispanel = =>
             return getmetatable( @ ) == metatable
 
+    -- Color
     do
 
         metatable = registry[ "Color" ]
         isnumber = isnumber
-        istable = istable
 
-        func = =>
+        metatable.__tostring = ( color ) ->
+            return color.r .. " " .. color.g .. " " .. color.b .. " " .. color.a
+
+        global IsColor = =>
             return getmetatable( @ ) == metatable
-
-        global IsColor = func
-        global iscolor = func
 
         do
 
@@ -395,7 +478,7 @@ do
 
             global Color = ( r, g, b, a ) ->
                 unless isnumber( r )
-                    r = tonumber( r )
+                    r = tonumber( r or 0 ) or 0
 
                 if r
                     if r > 255
@@ -406,7 +489,7 @@ do
                     r = 255
 
                 unless isnumber( g )
-                    g = tonumber( g )
+                    g = tonumber( g or 0 ) or 0
 
                 if g
                     if g > 255
@@ -417,7 +500,7 @@ do
                     g = 255
 
                 unless isnumber( b )
-                    b = tonumber( b )
+                    b = tonumber( b or 0 ) or 0
 
                 if b
                     if b > 255
@@ -428,7 +511,7 @@ do
                     b = 255
 
                 unless isnumber( a )
-                    a = tonumber( a )
+                    a = tonumber( a or 255 ) or 255
 
                 if a
                     if a > 255
@@ -439,9 +522,6 @@ do
                     a = 255
 
                 return setmetatable( { :r, :g, :b, :a }, metatable )
-
-:Alive, :IsBot = PLAYER
-:IsValid = ENTITY
 
 do
 
@@ -598,7 +678,6 @@ if SERVER
                 return true
 
     :GetInternalVariable = ENTITY
-    :GetClass = ENTITY
 
     do
 
