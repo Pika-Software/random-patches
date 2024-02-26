@@ -3,10 +3,11 @@ HOOK_MONITOR_HIGH = HOOK_MONITOR_HIGH
 color_white = color_white
 CurTime = CurTime
 :Simple = timer
+CLIENT = CLIENT
 SERVER = SERVER
 pairs = pairs
 
-addonName = "Random Patches v5.14.1"
+addonName = "Random Patches v5.15.0"
 
 getHookName = ( patchName, hookName ) ->
     return addonName .. "::" .. patchName .. ( hookName or "" )
@@ -525,6 +526,58 @@ do
                     a = 255
 
                 return setmetatable( { :r, :g, :b, :a }, metatable )
+
+do
+
+    trace, start = {}, Vector!
+    FrameNumber = FrameNumber
+    distance = 4096 * 8
+    :TraceLine = util
+
+    util.GetPlayerTrace = ( dir ) =>
+        start = @EyePos!
+
+        return {
+            start: start
+            endpos: start + ( ( dir or @GetAimVector! ) * distance )
+            filter: @
+        }
+
+    util.QuickTrace = ( origin, dir, filter ) ->
+        trace.start = origin
+        trace.endpos = origin + dir
+        trace.filter = filter
+        return TraceLine( trace )
+
+    PLAYER.GetEyeTrace = =>
+        if CLIENT
+            if @m_iLastEyeTrace == FrameNumber!
+                return @m_tEyeTrace
+
+            @m_iLastEyeTrace = FrameNumber!
+
+        start = @EyePos!
+        trace.start = start
+        trace.endpos = start + @GetAimVector! * distance
+        trace.filter = @
+
+        @m_tEyeTrace = TraceLine( trace )
+        return @m_tEyeTrace
+
+    PLAYER.GetEyeTraceNoCursor = =>
+        if CLIENT
+            if @m_iLastAimTrace == FrameNumber!
+                return @m_tAimTrace
+
+            @m_iLastAimTrace = FrameNumber!
+
+        start = @EyePos!
+        trace.start = start
+        trace.endpos = start + @EyeAngles!\Forward! * distance
+        trace.filter = @
+
+        @m_tAimTrace = TraceLine( trace )
+        return @m_tAimTrace
 
 do
 
