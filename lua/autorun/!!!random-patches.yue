@@ -6,7 +6,7 @@ CurTime = CurTime
 SERVER = SERVER
 pairs = pairs
 
-addonName = "Random Patches v5.14.0"
+addonName = "Random Patches v5.14.1"
 
 getHookName = ( patchName, hookName ) ->
     return addonName .. "::" .. patchName .. ( hookName or "" )
@@ -320,7 +320,10 @@ do
         :Nick = PLAYER
 
         PLAYER.__tostring = =>
-            return "Player [" .. EntIndex( @ ) .. "][" .. Nick( @ ) .. "]"
+            if IsValid( @ )
+                return "Player [" .. EntIndex( @ ) .. "][" .. Nick( @ ) .. "]"
+
+            return "[NULL Player]"
 
         ENTITY.IsPlayer = =>
             return getmetatable( @ ) == PLAYER
