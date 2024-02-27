@@ -7,7 +7,7 @@ CLIENT = CLIENT
 SERVER = SERVER
 pairs = pairs
 
-addonName = "Random Patches v5.15.1"
+addonName = "Random Patches v5.16.0"
 
 getHookName = ( patchName, hookName ) ->
     return addonName .. "::" .. patchName .. ( hookName or "" )
