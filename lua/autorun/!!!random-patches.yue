@@ -7,7 +7,7 @@ CLIENT = CLIENT
 SERVER = SERVER
 pairs = pairs
 
-addonName = "Random Patches v5.15.0"
+addonName = "Random Patches v5.15.1"
 
 getHookName = ( patchName, hookName ) ->
     return addonName .. "::" .. patchName .. ( hookName or "" )
@@ -414,7 +414,7 @@ do
         metatable = registry[ "Vector" ]
 
         metatable.__tostring = ( vector ) ->
-            return format( "%f, %f, %f", vector[ 1 ], vector[ 2 ], vector[ 3 ] )
+            return format( "%f %f %f", vector[ 1 ], vector[ 2 ], vector[ 3 ] )
 
         global isvector = =>
             return getmetatable( @ ) == metatable
@@ -425,7 +425,7 @@ do
         metatable = registry[ "Angle" ]
 
         metatable.__tostring = ( angles ) ->
-            return format( "%f, %f, %f", angles[ 1 ], angles[ 2 ], angles[ 3 ] )
+            return format( "%f %f %f", angles[ 1 ], angles[ 2 ], angles[ 3 ] )
 
         global isangle = =>
             return getmetatable( @ ) == metatable
@@ -481,47 +481,55 @@ do
             tonumber = tonumber
 
             global Color = ( r, g, b, a ) ->
-                unless isnumber( r )
-                    r = tonumber( r or 0 ) or 0
-
                 if r
+
+                    unless isnumber( r )
+                        r = tonumber( r ) or 255
+
                     if r > 255
                         r = 255
                     elseif r < 0
                         r = 0
+
                 else
                     r = 255
 
-                unless isnumber( g )
-                    g = tonumber( g or 0 ) or 0
-
                 if g
+
+                    unless isnumber( g )
+                        g = tonumber( g ) or 255
+
                     if g > 255
                         g = 255
                     elseif g < 0
                         g = 0
+
                 else
                     g = 255
 
-                unless isnumber( b )
-                    b = tonumber( b or 0 ) or 0
-
                 if b
+
+                    unless isnumber( b )
+                        b = tonumber( b ) or 255
+
                     if b > 255
                         b = 255
                     elseif b < 0
                         b = 0
+
                 else
                     b = 255
 
-                unless isnumber( a )
-                    a = tonumber( a or 255 ) or 255
-
                 if a
+
+                    unless isnumber( a )
+                        a = tonumber( a ) or 255
+
                     if a > 255
                         a = 255
                     elseif a < 0
                         a = 0
+
                 else
                     a = 255
 
