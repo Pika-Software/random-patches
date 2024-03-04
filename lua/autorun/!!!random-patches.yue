@@ -11,7 +11,7 @@ CLIENT = CLIENT
 SERVER = SERVER
 pairs = pairs
 
-addonName = "Random Patches v5.17.0"
+addonName = "Random Patches v5.17.1"
 
 getHookName = ( patchName, hookName ) ->
     return addonName .. "::" .. patchName .. ( hookName or "" )
@@ -226,7 +226,7 @@ do
         if value == nil
             value = ENTITY[ key ]
             if value == nil
-                return getTable( @ )[ key ]
+                value = getTable( @ )[ key ]
 
         return value
 
@@ -255,7 +255,7 @@ do
             if value == nil
                 value = ENTITY[ key ]
                 if value == nil
-                    return getTable( @ )[ key ]
+                    value = getTable( @ )[ key ]
 
             return value
 
@@ -268,7 +268,7 @@ do
             if value == nil
                 value = ENTITY[ key ]
                 if value == nil
-                    return getTable( @ )[ key ]
+                    value = getTable( @ )[ key ]
 
             return value
 
@@ -403,15 +403,8 @@ do
             return getmetatable( @ ) == metatable
 
     -- nil
-    do
-
-        metatable = registry[ "nil" ]
-
-        metatable.__tostring = ->
-            return "nil"
-
-        global isnil = =>
-            return getmetatable( @ ) == metatable
+    registry[ "nil" ].__tostring = ->
+        return "nil"
 
     -- number
     do
@@ -422,7 +415,7 @@ do
             return "" .. number
 
         global isnumber = =>
-            return getmetatable( @ ) == registry[ "number" ]
+            return getmetatable( @ ) == metatable
 
     -- string
     do
@@ -512,7 +505,6 @@ do
     do
 
         metatable = registry[ "Color" ]
-        isnumber = isnumber
 
         metatable.__tostring = ( color ) ->
             return color.r .. " " .. color.g .. " " .. color.b .. " " .. color.a
