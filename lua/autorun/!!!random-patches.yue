@@ -11,7 +11,7 @@ CLIENT = CLIENT
 SERVER = SERVER
 pairs = pairs
 
-addonName = "Random Patches v5.17.1"
+addonName = "Random Patches v5.17.2"
 
 getHookName = ( patchName, hookName ) ->
     return addonName .. "::" .. patchName .. ( hookName or "" )
@@ -575,10 +575,11 @@ do
 
 do
 
-    trace, start = {}, Vector!
     FrameNumber = FrameNumber
     distance = 4096 * 8
     :TraceLine = util
+
+    trace = {}
 
     util.GetPlayerTrace = ( dir ) =>
         start = @EyePos!
@@ -602,9 +603,8 @@ do
 
             @m_iLastEyeTrace = FrameNumber!
 
-        start = @EyePos!
-        trace.start = start
-        trace.endpos = start + @GetAimVector! * distance
+        trace.start = @EyePos!
+        trace.endpos = trace.start + ( @GetAimVector! * distance )
         trace.filter = @
 
         @m_tEyeTrace = TraceLine( trace )
@@ -617,9 +617,8 @@ do
 
             @m_iLastAimTrace = FrameNumber!
 
-        start = @EyePos!
-        trace.start = start
-        trace.endpos = start + @EyeAngles!\Forward! * distance
+        trace.start = @EyePos!
+        trace.endpos = trace.start + ( @EyeAngles!\Forward! * distance )
         trace.filter = @
 
         @m_tAimTrace = TraceLine( trace )
