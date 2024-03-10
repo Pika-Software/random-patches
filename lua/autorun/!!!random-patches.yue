@@ -11,7 +11,7 @@ CLIENT = CLIENT
 SERVER = SERVER
 pairs = pairs
 
-addonName = "Random Patches v5.17.2"
+addonName = "Random Patches v5.17.3"
 
 getHookName = ( patchName, hookName ) ->
     return addonName .. "::" .. patchName .. ( hookName or "" )
@@ -697,17 +697,24 @@ do
             @m_bLagCompensation = bool
             cLagCompensation( @, bool )
 
-hook_Add "PlayerFootstep", getHookName( "Player Footstep Fix" ), =>
-    unless @IsOnGround!
-        return true
-
 do
+
+    :IsOnGround, :GetMoveType = ENTITY
+
+    do
+
+        MOVETYPE_LADDER = MOVETYPE_LADDER
+
+        hook_Add "PlayerFootstep", getHookName( "Player Footstep Fix" ), =>
+            if not IsOnGround( @ ) and GetMoveType( @ ) ~= MOVETYPE_LADDER
+                return true
+
 
     MOVETYPE_NOCLIP = MOVETYPE_NOCLIP
     IN_DUCK = IN_DUCK
 
     hook_Add( "StartCommand", getHookName( "Air Crouching Fix" ), ( cmd ) =>
-        if @GetMoveType! == MOVETYPE_NOCLIP or @IsOnGround! or cmd\KeyDown( IN_DUCK ) or not @Crouching!
+        if GetMoveType( @ ) == MOVETYPE_NOCLIP or IsOnGround( @ ) or cmd\KeyDown( IN_DUCK ) or not @Crouching!
             return
 
         cmd\AddKey( IN_DUCK )
