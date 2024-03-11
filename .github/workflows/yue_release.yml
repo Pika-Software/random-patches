@@ -25,7 +25,7 @@ jobs:
 
       - name: Download Yuescript and unzip yue
         run: |
-          wget https://github.com/pigpigyyy/Yuescript/releases/download/v0.21.8/yue-linux-x86_64.zip
+          wget https://github.com/pigpigyyy/Yuescript/releases/download/v0.22.2/yue-linux-x86_64.zip
           unzip yue-linux-x86_64.zip
           rm yue-linux-x86_64.zip
 
