@@ -11,7 +11,7 @@ CLIENT = CLIENT
 SERVER = SERVER
 pairs = pairs
 
-addonName = "Random Patches v5.17.4"
+addonName = "Random Patches v5.17.5"
 
 getHookName = ( patchName, hookName ) ->
     return addonName .. "::" .. patchName .. ( hookName or "" )
@@ -815,6 +815,21 @@ if SERVER
         PRE_HOOK )
 
 if CLIENT and not MENU_DLL
+
+    -- cl_drawhud chat fix
+    do
+
+        cl_drawhud = GetConVar( "cl_drawhud" )
+        :Close = chat
+
+        hook_Add "StartChat", getHookName( "cl_drawhud fix" ), ->
+            if cl_drawhud\GetBool!
+                return
+
+            Close!
+            return true
+
+        cvars.AddChangeCallback( "cl_drawhud", Close, getHookName( "cl_drawhud fix" ) )
 
     do
 
