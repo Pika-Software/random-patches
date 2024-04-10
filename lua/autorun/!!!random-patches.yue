@@ -11,7 +11,7 @@ CLIENT = CLIENT
 SERVER = SERVER
 pairs = pairs
 
-addonName = "Random Patches v5.18.0"
+addonName = "Random Patches v5.18.1"
 
 getHookName = ( patchName, hookName ) ->
     return addonName .. "::" .. patchName .. ( hookName or "" )
@@ -173,7 +173,7 @@ do
     unless registry
         rawset = rawset
 
-        registry = setmetatable( {}, {
+        registry = setmetatable( debug.getregistry! or {}, {
             "__index": ( tbl, key ) ->
                 value = findMetaTable( key )
                 if value == nil
