@@ -5,26 +5,26 @@ if file.Exists( "ulib/shared/hook.lua", "LUA" )
 hook_Add, hook_Remove = hook.Add, hook.Remove
 PRE_HOOK = PRE_HOOK or HOOK_MONITOR_HIGH
 color_white = color_white
+import Simple from timer
 CurTime = CurTime
-:Simple = timer
 CLIENT = CLIENT
 SERVER = SERVER
 pairs = pairs
 
-addonName = "Random Patches v5.18.1"
+addonName = "Random Patches v5.19.0"
 
 getHookName = ( patchName, hookName ) ->
     return addonName .. "::" .. patchName .. ( hookName or "" )
 
-Register = nil
+local Register
 do
 
+    import AddChangeCallback from cvars
+    import gsub, lower from string
     FCVAR_ARCHIVE = FCVAR_ARCHIVE
-    FCVAR_FLAGS = bit.bor( FCVAR_ARCHIVE, FCVAR_REPLICATED, FCVAR_NOTIFY, FCVAR_DONTRECORD )
     CreateConVar = CreateConVar
-    :AddChangeCallback = cvars
-    :gsub, :lower = string
-    hookName = ""
+
+    FCVAR_FLAGS = bit.bor( FCVAR_ARCHIVE, FCVAR_REPLICATED, FCVAR_NOTIFY, FCVAR_DONTRECORD )
 
     Register = ( name, enable, disable, shared ) ->
         hookName = getHookName( name )
@@ -63,8 +63,8 @@ math.Clamp = ( number, min, max ) ->
 
 do
 
+    import random from math
     index, length = 1, 0
-    :random = math
 
     table.Shuffle = ( tbl ) ->
         length = #tbl
@@ -116,10 +116,10 @@ do
 
     iterator = ipairs( {} )
 
-    players = nil
+    local players
     do
 
-        :GetAll = player
+        import GetAll from player
 
         player.Iterator = ->
             if players == nil
@@ -127,10 +127,10 @@ do
 
             return iterator, players, 0
 
-    entities = nil
+    local entities
     do
 
-        :GetAll = ents
+        import GetAll from ents
 
         ents.Iterator = ->
             if entities == nil
@@ -149,44 +149,42 @@ do
 
 do
 
-    :yield = coroutine
+    import yield from coroutine
 
     coroutine.wait = ( seconds ) ->
         endTime = CurTime! + seconds
-        ::wait::
+        while true
+            if endTime < CurTime!
+                return
 
-        if endTime < CurTime!
-            return
+            yield!
 
-        yield!
-        goto wait
-
-ENTITY, PLAYER, registry = nil, nil, nil
+local ENTITY, PLAYER, registry
 do
 
-    findMetaTable = CFindMetaTable
-    unless findMetaTable
-        findMetaTable = FindMetaTable
-        global CFindMetaTable = findMetaTable
+    -- Just to be safe
+    global debug = debug or {}
 
-    registry = _R
-    unless registry
+    if isfunction( debug.getregistry )
+        registry = debug.getregistry! or {}
+    else
+        registry = {}
+
+    -- registry indexer with metatable
+    do
+
+        FindMetaTable = FindMetaTable
         rawset = rawset
 
-        registry = setmetatable( debug.getregistry! or {}, {
+        setmetatable( registry, {
             "__index": ( tbl, key ) ->
-                value = findMetaTable( key )
+                value = FindMetaTable( key )
                 if value == nil
                     return
 
                 rawset( tbl, key, value )
                 return value
         } )
-
-        global _R = registry
-
-    global FindMetaTable = ( name ) ->
-        return registry[ name ]
 
     debug.getregistry = ->
         return registry
@@ -274,9 +272,9 @@ do
 
     do
 
-        :getmetatable, :setmetatable = debug
+        import getmetatable, setmetatable from debug
+        local object
 
-        object = nil
         metatable = getmetatable( object )
         if metatable == nil
             metatable = {}
@@ -494,9 +492,9 @@ do
 
 do
 
+    import TraceLine from util
     FrameNumber = FrameNumber
     distance = 4096 * 8
-    :TraceLine = util
 
     trace = {}
 
@@ -696,7 +694,7 @@ if SERVER
     do
 
         :GetName, :SetSaveValue, :Fire = ENTITY
-        :FindByClass = ents
+        import FindByClass from ents
 
         hookName, classes = getHookName( "Area Portals Fix" ), {
             func_door_rotating: true
@@ -823,7 +821,7 @@ if CLIENT and not MENU_DLL
     do
 
         cl_drawhud = GetConVar( "cl_drawhud" )
-        :Close = chat
+        import Close from chat
 
         hook_Add "StartChat", getHookName( "cl_drawhud fix" ), ->
             if cl_drawhud\GetBool!
@@ -836,16 +834,15 @@ if CLIENT and not MENU_DLL
 
     do
 
-        gameevent.Listen( "server_cvar" )
-
-        :GetDefault = FindMetaTable( "ConVar" )
-        :OnConVarChanged = cvars
+        import OnConVarChanged from cvars
         GetConVar = GetConVar
 
-        values, name, old, new = {}, "", "", ""
+        :GetDefault = FindMetaTable( "ConVar" )
+        gameevent.Listen( "server_cvar" )
+        values = {}
 
         hook_Add( "server_cvar", "cvars.OnConVarChanged", ( data ) ->
-            name, new = data.cvarname, data.cvarvalue
+            name = data.cvarname
 
             old = values[ name ]
             if old == nil
@@ -856,9 +853,9 @@ if CLIENT and not MENU_DLL
                 old = GetDefault( conVar )
                 values[ name ] = old
             else
-                values[ name ] = new
+                values[ name ] = data.cvarvalue
 
-            OnConVarChanged( name, old, new )
+            OnConVarChanged( name, old, data.cvarvalue )
             return
 
         PRE_HOOK )
@@ -884,7 +881,7 @@ if CLIENT and not MENU_DLL
     -- https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/includes/extensions/client/render.lua
     do
 
-        :Start = cam
+        import Start from cam
 
         do
 
@@ -968,10 +965,10 @@ if CLIENT and not MENU_DLL
             PRE_HOOK )
 
         Register( "Screen Capture Fix", ( hookName ) ->
-            :IsGameUIVisible, :ActivateGameUI, :HideGameUI = gui
-            :CursorVisible = vgui
+            import IsGameUIVisible, ActivateGameUI, HideGameUI from gui
+            import CursorVisible from vgui
 
-            lastState = nil
+            local lastState
             hook_Add( "Think", hookName, ->
                 if HasFocus!
                     if lastState ~= nil
