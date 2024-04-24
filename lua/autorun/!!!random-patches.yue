@@ -11,7 +11,7 @@ CLIENT = CLIENT
 SERVER = SERVER
 pairs = pairs
 
-addonName = "Random Patches v5.19.0"
+addonName = "Random Patches v5.20.0"
 
 getHookName = ( patchName, hookName ) ->
     return addonName .. "::" .. patchName .. ( hookName or "" )
@@ -159,7 +159,7 @@ do
 
             yield!
 
-local ENTITY, PLAYER, registry
+local registry
 do
 
     -- Just to be safe
@@ -170,24 +170,30 @@ do
     else
         registry = {}
 
-    -- registry indexer with metatable
-    do
+    findMetaTable = __findMetaTable
+    unless isfunction( findMetaTable )
+        findMetaTable = FindMetaTable
+        global __findMetaTable = findMetaTable
 
-        FindMetaTable = FindMetaTable
-        rawset = rawset
+    setmetatable( registry, {
+        "__index": ( tbl, key ) ->
+            metatable = findMetaTable( key )
+            if metatable == nil
+                return
 
-        setmetatable( registry, {
-            "__index": ( tbl, key ) ->
-                value = FindMetaTable( key )
-                if value == nil
-                    return
+            rawset( tbl, key, metatable )
+            return metatable
+    } )
 
-                rawset( tbl, key, value )
-                return value
-        } )
+    -- patched FindMetaTable & debug.getregistry
+    global FindMetaTable = ( name ) ->
+        return registry[ name ]
 
     debug.getregistry = ->
         return registry
+
+local ENTITY, PLAYER
+do
 
     ENTITY, PLAYER = registry.Entity, registry.Player
 
@@ -835,9 +841,9 @@ if CLIENT and not MENU_DLL
     do
 
         import OnConVarChanged from cvars
+        :GetDefault = registry.ConVar
         GetConVar = GetConVar
 
-        :GetDefault = FindMetaTable( "ConVar" )
         gameevent.Listen( "server_cvar" )
         values = {}
 
