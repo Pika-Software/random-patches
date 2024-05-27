@@ -430,7 +430,7 @@ do
     -- Color
     do
 
-        metatable = getmetatable( color_white ) or registry[ "Color" ]
+        metatable = registry[ "Color" ] or getmetatable( color_white )
 
         global IsColor = =>
             return getmetatable( @ ) == metatable
