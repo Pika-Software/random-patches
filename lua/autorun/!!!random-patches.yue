@@ -9,7 +9,7 @@ PRE_HOOK = _G.PRE_HOOK or _G.HOOK_MONITOR_HIGH
 import Add, Remove from hook
 import Simple from timer
 
-addonName = "Random Patches v5.20.0"
+addonName = "Random Patches v5.20.3"
 
 getHookName = ( patchName, hookName ) ->
     return addonName .. "::" .. patchName .. ( hookName or "" )
