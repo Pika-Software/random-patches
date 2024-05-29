@@ -2,14 +2,12 @@
 if file.Exists( "ulib/shared/hook.lua", "LUA" )
     include( "ulib/shared/hook.lua" )
 
-hook_Add, hook_Remove = hook.Add, hook.Remove
-PRE_HOOK = PRE_HOOK or HOOK_MONITOR_HIGH
-color_white = color_white
+_G = _G
+
+import color_white, math, pairs, CurTime, CLIENT, SERVER from _G
+PRE_HOOK = _G.PRE_HOOK or _G.HOOK_MONITOR_HIGH
+import Add, Remove from hook
 import Simple from timer
-CurTime = CurTime
-CLIENT = CLIENT
-SERVER = SERVER
-pairs = pairs
 
 addonName = "Random Patches v5.20.0"
 
@@ -19,10 +17,9 @@ getHookName = ( patchName, hookName ) ->
 local Register
 do
 
+    import CreateConVar, FCVAR_ARCHIVE from _G
     import AddChangeCallback from cvars
     import gsub, lower from string
-    FCVAR_ARCHIVE = FCVAR_ARCHIVE
-    CreateConVar = CreateConVar
 
     FCVAR_FLAGS = bit.bor( FCVAR_ARCHIVE, FCVAR_REPLICATED, FCVAR_NOTIFY, FCVAR_DONTRECORD )
 
@@ -52,18 +49,28 @@ table.Empty = ( tbl ) ->
     for key in pairs( tbl )
         tbl[ key ] = nil
 
-math.Clamp = ( number, min, max ) ->
-	if number < min
-        return min
+do
 
-    if number > max
-        return max
+    import min, max from math
 
-	return number
+    math.Clamp = ( num, low, high ) ->
+        return min( max( num, low ), high )
+
+do
+
+    import floor from math
+
+    math.Round = ( num, idp ) ->
+        mult = 10 ^ ( idp or 0 )
+        return floor( num * mult + 0.5 ) / mult
 
 do
 
     import random from math
+
+    math.Rand = ( low, high ) ->
+        return low + ( high - low ) * random!
+
     index, length = 1, 0
 
     table.Shuffle = ( tbl ) ->
@@ -108,11 +115,11 @@ do
 
 do
 
-    hook_Remove( "OnEntityCreated", "player.Iterator" )
-    hook_Remove( "EntityRemoved", "player.Iterator" )
+    Remove( "OnEntityCreated", "player.Iterator" )
+    Remove( "EntityRemoved", "player.Iterator" )
 
-    hook_Remove( "OnEntityCreated", "ents.Iterator" )
-    hook_Remove( "EntityRemoved", "ents.Iterator" )
+    Remove( "OnEntityCreated", "ents.Iterator" )
+    Remove( "EntityRemoved", "ents.Iterator" )
 
     iterator = ipairs( {} )
 
@@ -144,8 +151,8 @@ do
 
         entities = nil
 
-    hook_Add( "OnEntityCreated", "player/ents.Iterator", invalidateCache, PRE_HOOK )
-    hook_Add( "EntityRemoved", "player/ents.Iterator", invalidateCache, PRE_HOOK )
+    Add( "OnEntityCreated", "player/ents.Iterator", invalidateCache, PRE_HOOK )
+    Add( "EntityRemoved", "player/ents.Iterator", invalidateCache, PRE_HOOK )
 
 do
 
@@ -170,14 +177,13 @@ do
     else
         registry = {}
 
-    findMetaTable = __findMetaTable
-    unless isfunction( findMetaTable )
-        findMetaTable = FindMetaTable
-        global __findMetaTable = findMetaTable
+    :CFindMetaTable = _G
+    unless CFindMetaTable
+        CFindMetaTable = _G.CFindMetaTable = _G.FindMetaTable
 
     setmetatable( registry, {
         "__index": ( tbl, key ) ->
-            metatable = findMetaTable( key )
+            metatable = CFindMetaTable( key )
             if metatable == nil
                 return
 
@@ -197,14 +203,13 @@ do
 
     ENTITY, PLAYER = registry.Entity, registry.Player
 
-    getCTable = ENTITY.GetCTable
-    unless getCTable
-        getCTable = ENTITY.GetTable
-        ENTITY.GetCTable = getCTable
+    :GetCTable = ENTITY
+    unless GetCTable
+        GetCTable = ENTITY.GetCTable = ENTITY.GetTable
 
     cache = {}
 
-    hook_Add( "EntityRemove", getHookName( "Entity.GetTable" ), ( entity ) ->
+    Add( "EntityRemove", getHookName( "Entity.GetTable" ), ( entity ) ->
         Simple 0, ->
             cache[ entity ] = nil
 
@@ -212,7 +217,7 @@ do
 
     getTable = ( entity ) ->
         if cache[ entity ] == nil
-            cache[ entity ] = getCTable( entity ) or {}
+            cache[ entity ] = GetCTable( entity ) or {}
 
         return cache[ entity ]
 
@@ -236,8 +241,8 @@ do
 
     do
 
-        :GetOwner = ENTITY
-        :Weapon = registry
+        import GetOwner from ENTITY
+        import Weapon from registry
 
         Weapon.__index = ( key ) =>
             value = Weapon[ key ]
@@ -252,7 +257,7 @@ do
 
     do
 
-        :Vehicle = registry
+        import Vehicle from registry
 
         Vehicle.__index = ( key ) =>
             value = Vehicle[ key ]
@@ -265,7 +270,7 @@ do
 
     do
 
-        :NPC = registry
+        import NPC from registry
 
         NPC.__index = ( key ) =>
             value = NPC[ key ]
@@ -328,12 +333,12 @@ do
 
         registry[ "thread" ] = metatable
 
-:IsValid, :GetClass = ENTITY
-:Alive, :IsBot = PLAYER
+import IsValid, GetClass from ENTITY
+import Alive, IsBot from PLAYER
 
 do
 
-    getmetatable = getmetatable
+    import getmetatable from _G
 
     -- Player
     ENTITY.IsPlayer = =>
@@ -437,9 +442,7 @@ do
 
         do
 
-            setmetatable = setmetatable
-            isnumber = isnumber
-            tonumber = tonumber
+            import setmetatable, isnumber, tonumber from _G
 
             global Color = ( r, g, b, a ) ->
                 if r
@@ -498,10 +501,10 @@ do
 
 do
 
+    import FrameNumber from _G
     import TraceLine from util
-    FrameNumber = FrameNumber
-    distance = 4096 * 8
 
+    distance = 4096 * 8
     trace = {}
 
     util.GetPlayerTrace = ( dir ) =>
@@ -549,7 +552,7 @@ do
 
 do
 
-    GetConVar_Internal = GetConVar_Internal
+    import GetConVar_Internal from _G
     cache = {}
 
     global GetConVar = ( name ) ->
@@ -564,9 +567,9 @@ do
         return cache[ name ]
 
 Register( "Player Shoot Position Fix", ( hookName ) ->
-    :GetShootPos = PLAYER
+    import GetShootPos from PLAYER
 
-    hook_Add( "SetupMove", hookName, =>
+    Add( "SetupMove", hookName, =>
         if IsBot( @ ) or not Alive( @ )
             return
 
@@ -574,7 +577,7 @@ Register( "Player Shoot Position Fix", ( hookName ) ->
 
     PRE_HOOK )
 
-    hook_Add "EntityFireBullets", hookName, ( data ) =>
+    Add "EntityFireBullets", hookName, ( data ) =>
         if not @IsPlayer! or IsBot( @ ) or not Alive( @ )
             return
 
@@ -584,16 +587,16 @@ Register( "Player Shoot Position Fix", ( hookName ) ->
             return true
 
 ( hookName ) ->
-    hook_Remove "EntityFireBullets", hookName
-    hook_Remove "SetupMove", hookName,
+    Remove "EntityFireBullets", hookName
+    Remove "SetupMove", hookName,
 true )
 
 do
 
     gameevent.Listen( "player_hurt" )
-    Player = Player
+    import Player from _G
 
-    hook_Add( "player_hurt", getHookName( "Player Decals Fix" ), ( data ) ->
+    Add( "player_hurt", getHookName( "Player Decals Fix" ), ( data ) ->
         health = data.health
         if health > 0
             return
@@ -611,33 +614,31 @@ do
 -- Source: https://github.com/Heyter/glua-turbo/blob/main/2_random_patches.lua
 do
 
-    cLagCompensation = PLAYER.CLagCompensation
-    unless cLagCompensation
-        cLagCompensation = PLAYER.LagCompensation
-        PLAYER.CLagCompensation = cLagCompensation
+    :CLagCompensation = PLAYER
+    unless CLagCompensation
+        CLagCompensation = PLAYER.CLagCompensation = PLAYER.LagCompensation
 
     PLAYER.LagCompensation = ( bool ) =>
         if @m_bLagCompensation ~= bool
             @m_bLagCompensation = bool
-            return cLagCompensation( @, bool )
+            return CLagCompensation( @, bool )
 
 do
 
-    :IsOnGround, :GetMoveType = ENTITY
+    import IsOnGround, GetMoveType from ENTITY
 
     do
 
-        MOVETYPE_LADDER = MOVETYPE_LADDER
+        import MOVETYPE_LADDER from _G
 
-        hook_Add "PlayerFootstep", getHookName( "Player Footstep Fix" ), =>
+        Add "PlayerFootstep", getHookName( "Player Footstep Fix" ), =>
             if not IsOnGround( @ ) and GetMoveType( @ ) ~= MOVETYPE_LADDER
                 return true
 
 
-    MOVETYPE_NOCLIP = MOVETYPE_NOCLIP
-    IN_DUCK = IN_DUCK
+    import MOVETYPE_NOCLIP, IN_DUCK from _G
 
-    hook_Add( "StartCommand", getHookName( "Air Crouching Fix" ), ( cmd ) =>
+    Add( "StartCommand", getHookName( "Air Crouching Fix" ), ( cmd ) =>
         if GetMoveType( @ ) == MOVETYPE_NOCLIP or IsOnGround( @ ) or cmd\KeyDown( IN_DUCK ) or not @Crouching!
             return
 
@@ -657,7 +658,7 @@ if SERVER
 
     do
 
-        :GetPhysicsObject = ENTITY
+        import GetPhysicsObject from ENTITY
 
         ENTITY.PhysWake = =>
             phys = GetPhysicsObject( @ )
@@ -667,7 +668,7 @@ if SERVER
 
             return false
 
-    hook_Add "PlayerSpawn", getHookName( "Player Color Fix" ), =>
+    Add "PlayerSpawn", getHookName( "Player Color Fix" ), =>
         @SetColor( color_white )
 
 	Register( "Default Deploy Speed Fix", ->
@@ -681,7 +682,7 @@ if SERVER
     Register( "Steam Auth Protection", ( hookName ) ->
         sv_lan = GetConVar( "sv_lan" )
 
-        hook_Add( "PlayerInitialSpawn", hookName, =>
+        Add( "PlayerInitialSpawn", hookName, =>
             if sv_lan\GetBool!
                 return
 
@@ -692,14 +693,14 @@ if SERVER
             return
         PRE_HOOK ),
     ( hookName ) ->
-        hook_Remove "PlayerInitialSpawn", hookName
+        Remove "PlayerInitialSpawn", hookName
     )
 
-    :GetInternalVariable = ENTITY
+    import GetInternalVariable from ENTITY
 
     do
 
-        :GetName, :SetSaveValue, :Fire = ENTITY
+        import GetName, SetSaveValue, Fire from ENTITY
         import FindByClass from ents
 
         hookName, classes = getHookName( "Area Portals Fix" ), {
@@ -710,7 +711,7 @@ if SERVER
         }
 
         start = ->
-            hook_Add( "EntityRemoved", hookName, ( entity ) ->
+            Add( "EntityRemoved", hookName, ( entity ) ->
                 unless classes[ GetClass( entity ) ]
                     return
 
@@ -726,19 +727,19 @@ if SERVER
             PRE_HOOK )
 
         stop = ->
-            hook_Remove "EntityRemoved", hookName
+            Remove "EntityRemoved", hookName
             return
 
-        hook_Add "PostCleanupMap", hookName, start, PRE_HOOK
-        hook_Add "PreCleanupMap", hookName, stop, PRE_HOOK
-        hook_Add "ShutDown", hookName, stop, PRE_HOOK
+        Add "PostCleanupMap", hookName, start, PRE_HOOK
+        Add "PreCleanupMap", hookName, stop, PRE_HOOK
+        Add "ShutDown", hookName, stop, PRE_HOOK
         start!
 
     do
 
-        SOLID_VPHYSICS = SOLID_VPHYSICS
+        import SOLID_VPHYSICS from _G
 
-        hook_Add( "PlayerSpawnedSENT", getHookName( "HL2 Chargers Physics" ), ( _, entity ) ->
+        Add( "PlayerSpawnedSENT", getHookName( "HL2 Chargers Physics" ), ( _, entity ) ->
             className = GetClass( entity )
             if className == "item_suitcharger" or className == "item_healthcharger"
                 entity\PhysicsInit( SOLID_VPHYSICS )
@@ -753,39 +754,38 @@ if SERVER
 	-- https://i.imgur.com/a0lmB9m.png
     do
 
-        cUserID = PLAYER.CUserID
-        unless cUserID
-            cUserID = PLAYER.UserID
-            PLAYER.CUserID = cUserID
+        :CUserID = PLAYER
+        unless CUserID
+            CUserID = PLAYER.CUserID = PLAYER.UserID
 
         PLAYER.UserID = =>
-            return @m_bUserID or cUserID( @ )
+            return @m_bUserID or CUserID( @ )
 
         do
 
             hookName, cacheFunc = getHookName( "UserID Cache" ), =>
-                @m_bUserID = cUserID( @ )
+                @m_bUserID = CUserID( @ )
 
-            hook_Add "PlayerInitialSpawn", hookName, cacheFunc, PRE_HOOK
-            hook_Add "PlayerAuthed", hookName, cacheFunc, PRE_HOOK
+            Add "PlayerInitialSpawn", hookName, cacheFunc, PRE_HOOK
+            Add "PlayerAuthed", hookName, cacheFunc, PRE_HOOK
 
     -- https://github.com/Facepunch/garrysmod-issues/issues/2452
     do
 
         hookName = getHookName( "Pod Performance Fix" )
-        EFL_NO_THINK_FUNCTION = EFL_NO_THINK_FUNCTION
+        import EFL_NO_THINK_FUNCTION from _G
 
-        hook_Add( "OnEntityCreated", hookName, ( entity ) ->
+        Add( "OnEntityCreated", hookName, ( entity ) ->
             if GetClass( entity ) == "prop_vehicle_prisoner_pod"
                 entity\AddEFlags( EFL_NO_THINK_FUNCTION )
                 return
 
         PRE_HOOK )
 
-        hook_Add( "PlayerLeaveVehicle", hookName, ( _, entity ) ->
+        Add( "PlayerLeaveVehicle", hookName, ( _, entity ) ->
             if GetClass( entity ) == "prop_vehicle_prisoner_pod"
-                hook_Add( "Think", entity, ->
-                    hook_Remove "Think", entity
+                Add( "Think", entity, ->
+                    Remove "Think", entity
 
                     if GetInternalVariable( entity, "m_bEnterAnimOn" ) or GetInternalVariable( entity, "m_bExitAnimOn" )
                         return
@@ -798,10 +798,10 @@ if SERVER
 
         PRE_HOOK )
 
-        hook_Add( "PlayerEnteredVehicle", hookName, ( _, entity ) ->
+        Add( "PlayerEnteredVehicle", hookName, ( _, entity ) ->
             if GetClass( entity ) == "prop_vehicle_prisoner_pod"
                 entity\RemoveEFlags( EFL_NO_THINK_FUNCTION )
-                hook_Remove "Think", entity
+                Remove "Think", entity
                 return
 
         PRE_HOOK )
@@ -810,9 +810,9 @@ if SERVER
 	-- Explosive damage only works if is located in front of prop_vehicle_prisoner_pod (wtf?)
     do
 
-        :TakePhysicsDamage = ENTITY
+        import TakePhysicsDamage from ENTITY
 
-        hook_Add( "EntityTakeDamage", getHookName( "prop_vehicle_prisoner_pod Damage Fix" ), ( entity, damageInfo ) ->
+        Add( "EntityTakeDamage", getHookName( "prop_vehicle_prisoner_pod Damage Fix" ), ( entity, damageInfo ) ->
             if GetClass( entity ) ~= "prop_vehicle_prisoner_pod" or entity.AcceptDamageForce
                 return
 
@@ -829,7 +829,7 @@ if CLIENT and not MENU_DLL
         cl_drawhud = GetConVar( "cl_drawhud" )
         import Close from chat
 
-        hook_Add "StartChat", getHookName( "cl_drawhud fix" ), ->
+        Add "StartChat", getHookName( "cl_drawhud fix" ), ->
             if cl_drawhud\GetBool!
                 return
 
@@ -847,7 +847,7 @@ if CLIENT and not MENU_DLL
         gameevent.Listen( "server_cvar" )
         values = {}
 
-        hook_Add( "server_cvar", "cvars.OnConVarChanged", ( data ) ->
+        Add( "server_cvar", "cvars.OnConVarChanged", ( data ) ->
             name = data.cvarname
 
             old = values[ name ]
@@ -958,7 +958,7 @@ if CLIENT and not MENU_DLL
             IN_ATTACK, IN_ATTACK2 = IN_ATTACK, IN_ATTACK2
             lastNoFocusTime = 0
 
-            hook_Add( "CreateMove", getHookName( "Focus Attack Fix" ), ( cmd ) ->
+            Add( "CreateMove", getHookName( "Focus Attack Fix" ), ( cmd ) ->
                 if ( CurTime! - lastNoFocusTime ) < 0.25
                     cmd\RemoveKey( IN_ATTACK )
                     cmd\RemoveKey( IN_ATTACK2 )
@@ -975,7 +975,7 @@ if CLIENT and not MENU_DLL
             import CursorVisible from vgui
 
             local lastState
-            hook_Add( "Think", hookName, ->
+            Add( "Think", hookName, ->
                 if HasFocus!
                     if lastState ~= nil
                         if lastState
@@ -994,7 +994,7 @@ if CLIENT and not MENU_DLL
 
             PRE_HOOK )
         ( hookName ) ->
-            hook_Remove "Think", hookName
+            Remove "Think", hookName
         )
 
 MsgC( SERVER and Color( 50, 100, 250 ) or Color( 250, 100, 50 ), "[" .. addonName .. "] ", color_white, table.Random( {
